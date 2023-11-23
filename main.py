@@ -20,6 +20,7 @@ def drawLines(image):
 
 if __name__ == '__main__':
     frame_buffer = deque(maxlen=100)
+    mask_buffer = deque(maxlen=100)
     current_frame_index = 0
     pause = False
     cap = cv2.VideoCapture('intersectie.mp4')
@@ -66,6 +67,7 @@ if __name__ == '__main__':
 
             # aplicam diferite praguri pt fgmask pentru a incerca sa izolam masinile
             opening = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel2)  # erosion urmat de dilation
+            mask_buffer.append(opening)
 
             # creates contours
             contours, hierarchy = cv2.findContours(opening, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -122,7 +124,7 @@ if __name__ == '__main__':
                 current_frame_index += 1
 
         if not pause:
-            cv2.imshow("finalMask", opening)
+            cv2.imshow("finalMask", mask_buffer[-1])
             cv2.moveWindow('finalMask', 0, 0)
             cv2.imshow("gray", gray)
             cv2.moveWindow("gray", 1400, 0)
@@ -130,7 +132,9 @@ if __name__ == '__main__':
             cv2.moveWindow('mask', 0, 1400)
             cv2.imshow("image", frame_buffer[-1])
         else:
+            cv2.imshow("finalMask", mask_buffer[current_frame_index])
             cv2.imshow("image",frame_buffer[current_frame_index])
+        cv2.moveWindow('finalMask', 0, 0)
         cv2.moveWindow('image', 1400, 600)
 
         if ret:  # if there is a frame continue with code
