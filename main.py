@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import pandas as pd
+from collections import deque
 
 def drawLines(image):
     # DB = Dark Blue
@@ -18,6 +19,9 @@ def drawLines(image):
 
 
 if __name__ == '__main__':
+    frame_buffer = deque(maxlen=100)
+    current_frame_index = 0
+    pause = False
     cap = cv2.VideoCapture('intersectie.mp4')
     frames_count, fps = cap.get(cv2.CAP_PROP_FRAME_COUNT), cap.get(cv2.CAP_PROP_FPS)
     width, height = cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -30,22 +34,22 @@ if __name__ == '__main__':
 
     MINAREA = 300
     MAXAREA = 50000
-    framenumber = 0 # keeps track of current frame
-    LLcars = 0 # masini de pe partea stanga (LL = Left Lane)
-    MLcars = 0 # masini de pe partea de mijloc
-    RLcars = 0 # masini de pe partea dreapta
-    carids = [] # id-ul masinilor
-    caridcrossed = [] # id-ul masinilor ce au trecut de bariera
-    totalcars = 0 # toate masinile ce au trecut de bariera
+    framenumber = 0  # keeps track of current frame
+    LLcars = 0  # masini de pe partea stanga (LL = Left Lane)
+    MLcars = 0  # masini de pe partea de mijloc
+    RLcars = 0  # masini de pe partea dreapta
+    carids = []  # id-ul masinilor
+    caridcrossed = []  # id-ul masinilor ce au trecut de bariera
+    totalcars = 0  # toate masinile ce au trecut de bariera
 
     # o solutie foarte buna de a detecta obiecte ce se misca pe un background static
     # folosind backgroundSubtractor
     fgbg = cv2.createBackgroundSubtractorMOG2()
 
-    #a
-    ret, frame = cap.read() # import image
-    ratio = .7 # resize ratio in order to reduce lag
-    image = cv2.resize(frame, (0, 0), None, ratio, ratio) # resize image
+    ret, frame = cap.read()  # import image
+    ratio = .7  # resize ratio in order to reduce lag
+    image = cv2.resize(frame, (0, 0), None, ratio, ratio)  # resize image
+    frame_buffer.append(image)
     width2, height2, channels = image.shape
     video = cv2.VideoWriter('traffic_counter.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (height2, width2),1)
 
@@ -53,11 +57,12 @@ if __name__ == '__main__':
     kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
 
     while True:
-        ret, frame = cap.read()
+        if not pause:
+            ret, frame = cap.read()
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  # converteste imaginea in grayscale
         # equalizedHistogram = cv2.equalizeHist(gray)
-        fgmask = fgbg.apply(gray) # aplica background subtractor pentru a distinge obiectele care se misca
+        fgmask = fgbg.apply(gray)  # aplica background subtractor pentru a distinge obiectele care se misca
 
         # aplicam diferite praguri pt fgmask pentru a incerca sa izolam masinile
         opening = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel2)  # erosion urmat de dilation
@@ -69,16 +74,16 @@ if __name__ == '__main__':
         hull = [cv2.convexHull(c) for c in contours]
 
         # draw contours / lines
-        # cv2.drawContours(image, hull, -1, (0,255,0), 3)
+        cv2.drawContours(image, hull, -1, (0,255,0), 3)
         # drawLines(image)
 
         cxx = np.zeros(len(contours))
         cyy = np.zeros(len(contours))
 
         for i in range(len(contours)):
-            if hierarchy[0, i, 3] == -1: # conturul trebuie sa fie parinte (nu contur din contur)
+            if hierarchy[0, i, 3] == -1:  # conturul trebuie sa fie parinte (nu contur din contur)
                 area = cv2.contourArea(contours[i])
-                if MINAREA < area < MAXAREA: # conturul trebuie sa aiba o arie minima si maxima
+                if MINAREA < area < MAXAREA:  # conturul trebuie sa aiba o arie minima si maxima
                     cnt = contours[i]
                     M = cv2.moments(cnt)
                     # stocam x-ul si y-ul conturului
@@ -94,10 +99,25 @@ if __name__ == '__main__':
                     cxx[i] = cx
                     cyy[i] = cy
 
-        cxx = cxx[cxx != 0] # creaza un nou array selectand elementele care satisfac conditia
-        cyy = cyy[cyy != 0] # practic scapa de elementele cu valoare 0 , raman doar centrele care
-                            # raman dupa conditiile de mai sus
+        cxx = cxx[cxx != 0]  # creaza un nou array selectand elementele care satisfac conditia
+        cyy = cyy[cyy != 0]  # practic scapa de elementele cu valoare 0 , raman doar centrele care
+                             # raman dupa conditiile de mai sus
 
+        if len(cxx) : # exista masini detectate in frame
+            pass
+
+        key = cv2.waitKey(10)
+        if key == ord('q'):  # Press 'q' to exit
+            break
+        elif key == ord(' '):  # Press space to toggle pause
+            pause = not pause
+            current_frame_index = len(frame_buffer) - 1
+        elif key == ord('a'):  # Press '<' to move backward
+            if pause:
+                current_frame_index -= 1
+        elif key == ord('d'):  # Press '>' to move forward
+            if pause and current_frame_index + 1 < len(frame_buffer) - 1:
+                current_frame_index += 1
 
         cv2.imshow("finalMask", opening)
         cv2.moveWindow('finalMask', 0, 0)
@@ -105,12 +125,14 @@ if __name__ == '__main__':
         cv2.moveWindow("gray",1400 , 0)
         cv2.imshow("mask",fgmask)
         cv2.moveWindow('mask', 0, 1400)
-        cv2.imshow("image",image)
+        if pause:
+            cv2.imshow("image",frame_buffer[current_frame_index])
+        else:
+            cv2.imshow("image", frame_buffer[-1])
         cv2.moveWindow('image', 1400, 600)
-
-        if cv2.waitKey(1) == ord('q') :
-            break
 
         if ret:  # if there is a frame continue with code
 
             image = cv2.resize(frame, (0, 0), None, ratio, ratio)  # resize image
+            if not pause:
+                frame_buffer.append(image)
