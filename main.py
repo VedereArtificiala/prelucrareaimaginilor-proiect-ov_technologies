@@ -16,6 +16,32 @@ def drawLines(image):
     cv2.line(image, (117, 258), (108, 219), (255, 200, 200), 5)
     cv2.line(image, (155, 177), (323, 163), (0, 0, 0), 5)
 
+def afisare(lista_imagini, text_imagini, cadre_pe_linie = 2):
+    nr_cadre = len(lista_imagini)
+    nr_linii = int(np.ceil(nr_cadre / cadre_pe_linie))
+    nr_coloane = cadre_pe_linie
+    randuri_poze = []
+    latime, inaltime = lista_imagini[0].shape
+
+    for i in range(nr_linii):
+        linie_poze = []
+        for j in range(nr_coloane):
+            index_lista = i * nr_coloane + j
+            if index_lista < nr_cadre:
+                cv2.putText(lista_imagini[index_lista], text_imagini[index_lista], (5, 15), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5, (255, 255, 255), 1, cv2.LINE_AA)
+                if len(lista_imagini[index_lista].shape) < 3:
+                    color = np.zeros((int(latime), int(inaltime), 3), np.uint8)
+                    cv2.cvtColor(lista_imagini[index_lista], cv2.COLOR_GRAY2RGB, color)
+                    linie_poze.append(color)
+                else:
+                    linie_poze.append(lista_imagini[index_lista])
+            else:
+                linie_poze.append(np.zeros((int(latime), int(inaltime), 3), np.uint8))
+        randuri_poze.append(cv2.hconcat(linie_poze))
+    final = cv2.vconcat(randuri_poze)
+
+    cv2.imshow('video', final)
 
 
 if __name__ == '__main__':
@@ -49,7 +75,10 @@ if __name__ == '__main__':
 
     ret, frame = cap.read()  # import image
     ratio = .5  # resize ratio in order to reduce lag
-    image = cv2.resize(frame, (0, 0), None, ratio, ratio)  # resize image
+    #image = cv2.resize(frame, (0, 0), None, ratio, ratio)  # resize image
+    # resize image
+    image = cv2.resize(frame, (int(width*ratio), int(height*ratio)), interpolation=cv2.INTER_AREA)
+
     frame_buffer.append(image)
     width2, height2, channels = image.shape
     video = cv2.VideoWriter('traffic_counter.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (height2, width2),1)
@@ -60,9 +89,7 @@ if __name__ == '__main__':
     while True:
         if not pause:
             ret, frame = cap.read()
-
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  # converteste imaginea in grayscale
-            print("Lungime:"+str(len(gray.shape)))
             # equalizedHistogram = cv2.equalizeHist(gray)
             fgmask = fgbg.apply(gray)  # aplica background subtractor pentru a distinge obiectele care se misca
 
@@ -124,34 +151,13 @@ if __name__ == '__main__':
             if pause and current_frame_index + 1 < len(frame_buffer) - 1:
                 current_frame_index += 1
 
-        ##incercare de afisare
-        cadre_pe_linie = 2  # pentru afisarea finala
-        lista_imagini = [mask_buffer[-1], gray, fgmask, frame_buffer[-1]]   #lista cu imagini de afisat
-        text_imagini = ["finalMask", "gray", "mask", "image"]   #lista cu numele fiecarei imagini
-        nr_cadre = len(lista_imagini)
-        nr_linii = int(np.ceil(nr_cadre / cadre_pe_linie))
-        nr_coloane = cadre_pe_linie
-        randuri_poze = []
-        for i in range(nr_linii):
-            linie_poze = []
-            for j in range(nr_coloane):
-                index_lista = i * nr_coloane + j
-                if index_lista < nr_cadre:
-                    cv2.putText(lista_imagini[index_lista], text_imagini[index_lista], (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-                    if len(lista_imagini[index_lista].shape)<3:
-                        color = np.zeros((int(width2), int(height2), 3), np.uint8)
-                        cv2.cvtColor(lista_imagini[index_lista], cv2.COLOR_GRAY2RGB, color)
-                        linie_poze.append(color)
-                    else:
-                        linie_poze.append(lista_imagini[index_lista])
-                else:
-                    linie_poze.append(np.zeros((int(width2), int(height2), 3), np.uint8))
-            randuri_poze.append(cv2.hconcat(linie_poze))
-        final = cv2.vconcat(randuri_poze)
-
-        cv2.imshow('video', final)
-
+        #inceput afisare
+        imagini = [gray,  fgmask, mask_buffer[-1], frame_buffer[-1]]  # lista cu imagini de afisat
+        texte = ["gray",  "mask", "finalMask", "image"]  # lista cu numele fiecarei imagini
+        numar_de_imagini_pe_linie = 2
+        afisare(imagini, texte, numar_de_imagini_pe_linie)
         ##sfarsit afisare
+
         #if not pause:
             #cv2.imshow("finalMask", mask_buffer[-1])
             #cv2.moveWindow('finalMask', 0, 0)
