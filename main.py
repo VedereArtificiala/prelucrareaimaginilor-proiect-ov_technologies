@@ -48,7 +48,7 @@ if __name__ == '__main__':
     fgbg = cv2.createBackgroundSubtractorMOG2()
 
     ret, frame = cap.read()  # import image
-    ratio = .7  # resize ratio in order to reduce lag
+    ratio = .5  # resize ratio in order to reduce lag
     image = cv2.resize(frame, (0, 0), None, ratio, ratio)  # resize image
     frame_buffer.append(image)
     width2, height2, channels = image.shape
@@ -62,6 +62,7 @@ if __name__ == '__main__':
             ret, frame = cap.read()
 
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  # converteste imaginea in grayscale
+            print("Lungime:"+str(len(gray.shape)))
             # equalizedHistogram = cv2.equalizeHist(gray)
             fgmask = fgbg.apply(gray)  # aplica background subtractor pentru a distinge obiectele care se misca
 
@@ -123,19 +124,47 @@ if __name__ == '__main__':
             if pause and current_frame_index + 1 < len(frame_buffer) - 1:
                 current_frame_index += 1
 
-        if not pause:
-            cv2.imshow("finalMask", mask_buffer[-1])
-            cv2.moveWindow('finalMask', 0, 0)
-            cv2.imshow("gray", gray)
-            cv2.moveWindow("gray", 1400, 0)
-            cv2.imshow("mask", fgmask)
-            cv2.moveWindow('mask', 0, 1400)
-            cv2.imshow("image", frame_buffer[-1])
-        else:
-            cv2.imshow("finalMask", mask_buffer[current_frame_index])
-            cv2.imshow("image",frame_buffer[current_frame_index])
-        cv2.moveWindow('finalMask', 0, 0)
-        cv2.moveWindow('image', 1400, 600)
+        ##incercare de afisare
+        cadre_pe_linie = 2  # pentru afisarea finala
+        lista_imagini = [mask_buffer[-1], gray, fgmask, frame_buffer[-1]]   #lista cu imagini de afisat
+        text_imagini = ["finalMask", "gray", "mask", "image"]   #lista cu numele fiecarei imagini
+        nr_cadre = len(lista_imagini)
+        nr_linii = int(np.ceil(nr_cadre / cadre_pe_linie))
+        nr_coloane = cadre_pe_linie
+        randuri_poze = []
+        for i in range(nr_linii):
+            linie_poze = []
+            for j in range(nr_coloane):
+                index_lista = i * nr_coloane + j
+                if index_lista < nr_cadre:
+                    cv2.putText(lista_imagini[index_lista], text_imagini[index_lista], (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+                    if len(lista_imagini[index_lista].shape)<3:
+                        color = np.zeros((int(width2), int(height2), 3), np.uint8)
+                        cv2.cvtColor(lista_imagini[index_lista], cv2.COLOR_GRAY2RGB, color)
+                        linie_poze.append(color)
+                    else:
+                        linie_poze.append(lista_imagini[index_lista])
+                else:
+                    linie_poze.append(np.zeros((int(width2), int(height2), 3), np.uint8))
+            randuri_poze.append(cv2.hconcat(linie_poze))
+        final = cv2.vconcat(randuri_poze)
+
+        cv2.imshow('video', final)
+
+        ##sfarsit afisare
+        #if not pause:
+            #cv2.imshow("finalMask", mask_buffer[-1])
+            #cv2.moveWindow('finalMask', 0, 0)
+            #cv2.imshow("gray", gray)
+            #cv2.moveWindow("gray", 1400, 0)
+            #cv2.imshow("mask", fgmask)
+            #cv2.moveWindow('mask', 0, 1400)
+            #cv2.imshow("image", frame_buffer[-1])
+        #else:
+            #cv2.imshow("finalMask", mask_buffer[current_frame_index])
+            #cv2.imshow("image",frame_buffer[current_frame_index])
+        #cv2.moveWindow('finalMask', 0, 0)
+        #cv2.moveWindow('image', 1400, 600)
 
         if ret:  # if there is a frame continue with code
 
