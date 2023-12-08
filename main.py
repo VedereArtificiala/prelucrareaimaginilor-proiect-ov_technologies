@@ -153,24 +153,13 @@ if __name__ == '__main__':
 
         #inceput afisare
         imagini = [gray,  fgmask, mask_buffer[-1], frame_buffer[-1]]  # lista cu imagini de afisat
+        imagini2 = [gray,  fgmask, mask_buffer[current_frame_index], frame_buffer[current_frame_index]]  # lista cu imagini de afisat
         texte = ["gray",  "mask", "finalMask", "image"]  # lista cu numele fiecarei imagini
         numar_de_imagini_pe_linie = 2
-        afisare(imagini, texte, numar_de_imagini_pe_linie)
-        ##sfarsit afisare
-
-        #if not pause:
-            #cv2.imshow("finalMask", mask_buffer[-1])
-            #cv2.moveWindow('finalMask', 0, 0)
-            #cv2.imshow("gray", gray)
-            #cv2.moveWindow("gray", 1400, 0)
-            #cv2.imshow("mask", fgmask)
-            #cv2.moveWindow('mask', 0, 1400)
-            #cv2.imshow("image", frame_buffer[-1])
-        #else:
-            #cv2.imshow("finalMask", mask_buffer[current_frame_index])
-            #cv2.imshow("image",frame_buffer[current_frame_index])
-        #cv2.moveWindow('finalMask', 0, 0)
-        #cv2.moveWindow('image', 1400, 600)
+        if not pause:
+            afisare(imagini, texte, numar_de_imagini_pe_linie)
+        else:
+            afisare(imagini2, texte, numar_de_imagini_pe_linie)
 
         if ret:  # if there is a frame continue with code
 
