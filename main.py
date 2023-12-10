@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-import pandas as pd
+#import pandas as pd
 from collections import deque
 
 def drawLines(image):
@@ -21,8 +21,9 @@ def afisare(lista_imagini, text_imagini, cadre_pe_linie = 2):
     nr_linii = int(np.ceil(nr_cadre / cadre_pe_linie))
     nr_coloane = cadre_pe_linie
     randuri_poze = []
-    latime, inaltime = lista_imagini[0].shape
-
+    *dimensiuni_poza, = lista_imagini[0].shape
+    latime = dimensiuni_poza[0]
+    inaltime = dimensiuni_poza[1]
     for i in range(nr_linii):
         linie_poze = []
         for j in range(nr_coloane):
@@ -43,6 +44,9 @@ def afisare(lista_imagini, text_imagini, cadre_pe_linie = 2):
 
     cv2.imshow('video', final)
 
+def filtruDelimitare(listaLinii, latime, inaltime):
+    imagineDelimitata = np.zeros((int(latime), int(inaltime), 3), np.uint8)
+    return imagineDelimitata
 
 if __name__ == '__main__':
     frame_buffer = deque(maxlen=100)
@@ -50,14 +54,14 @@ if __name__ == '__main__':
     current_frame_index = 0
     pause = False
     cap = cv2.VideoCapture('intersectie.mp4')
-    frames_count, fps = cap.get(cv2.CAP_PROP_FRAME_COUNT), cap.get(cv2.CAP_PROP_FPS)
-    width, height = cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    print(frames_count, fps, width, height)
+    #frames_count, fps = cap.get(cv2.CAP_PROP_FRAME_COUNT), cap.get(cv2.CAP_PROP_FPS)
+    #width, height = cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    #print(frames_count, fps, width, height)
 
     # pandas dataframe = structura bidimensionala de tip tablou
     # contine o linie pentru fiecare frame al videoclipului
-    df = pd.DataFrame(index=range(int(frames_count)))
-    df.index.name = "Frames"
+    #df = pd.DataFrame(index=range(int(frames_count)))
+    #df.index.name = "Frames"
 
     MINAREA = 300
     MAXAREA = 50000
@@ -73,15 +77,7 @@ if __name__ == '__main__':
     # folosind backgroundSubtractor
     fgbg = cv2.createBackgroundSubtractorMOG2()
 
-    ret, frame = cap.read()  # import image
-    ratio = .5  # resize ratio in order to reduce lag
-    #image = cv2.resize(frame, (0, 0), None, ratio, ratio)  # resize image
-    # resize image
-    image = cv2.resize(frame, (int(width*ratio), int(height*ratio)), interpolation=cv2.INTER_AREA)
-
-    frame_buffer.append(image)
-    width2, height2, channels = image.shape
-    video = cv2.VideoWriter('traffic_counter.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (height2, width2),1)
+    ratio = .4  # resize ratio in order to reduce lag
 
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (4, 4))
     kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
@@ -89,6 +85,11 @@ if __name__ == '__main__':
     while True:
         if not pause:
             ret, frame = cap.read()
+            frame = cv2.resize(frame, (0, 0), None, ratio, ratio)  # resize image
+            resizedWidth, resizedHeight, channels = frame.shape
+            image = frame.copy()
+            frame_buffer.append(image)
+
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  # converteste imaginea in grayscale
             # equalizedHistogram = cv2.equalizeHist(gray)
             fgmask = fgbg.apply(gray)  # aplica background subtractor pentru a distinge obiectele care se misca
@@ -151,18 +152,14 @@ if __name__ == '__main__':
             if pause and current_frame_index + 1 < len(frame_buffer) - 1:
                 current_frame_index += 1
 
+        #aplicare filtru delimitare pe poza originala
+        imagineDelimitata = filtruDelimitare(1, resizedWidth, resizedHeight)
         #inceput afisare
-        imagini = [gray,  fgmask, mask_buffer[-1], frame_buffer[-1]]  # lista cu imagini de afisat
-        imagini2 = [gray,  fgmask, mask_buffer[current_frame_index], frame_buffer[current_frame_index]]  # lista cu imagini de afisat
-        texte = ["gray",  "mask", "finalMask", "image"]  # lista cu numele fiecarei imagini
+        imagini = [ frame, mask_buffer[-1], frame_buffer[-1], imagineDelimitata]  # lista cu imagini de afisat
+        imagini2 = [ frame, mask_buffer[current_frame_index], frame_buffer[current_frame_index], imagineDelimitata]  # lista cu imagini de afisat
+        texte = ["original", "finalMask", "image", "imagine delimitata"]  # lista cu numele fiecarei imagini
         numar_de_imagini_pe_linie = 2
         if not pause:
             afisare(imagini, texte, numar_de_imagini_pe_linie)
         else:
             afisare(imagini2, texte, numar_de_imagini_pe_linie)
-
-        if ret:  # if there is a frame continue with code
-
-            image = cv2.resize(frame, (0, 0), None, ratio, ratio)  # resize image
-            if not pause:
-                frame_buffer.append(image)
