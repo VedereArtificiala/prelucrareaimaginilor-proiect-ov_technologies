@@ -5,7 +5,7 @@ from collections import deque
 
 def drawLines(image):
     # DB = Dark Blue
-    # LB = light Blue
+    # LB = light Blue-
     cv2.line(image, (100,195),(107,217),(255,0,0),5)
     cv2.line(image, (264,168),(319,163),(255,0,0),5)
     cv2.line(image, (452,200),(497,216),(255,0,0),5)
@@ -44,8 +44,20 @@ def afisare(lista_imagini, text_imagini, cadre_pe_linie = 2):
 
     cv2.imshow('video', final)
 
-def filtruDelimitare(listaLinii, latime, inaltime):
+def filtruDelimitare(listaPuncte, latime, inaltime):
     imagineDelimitata = np.zeros((int(latime), int(inaltime), 3), np.uint8)
+    if len(listaPuncte) >= 3:   #nu scimba la 2 ca il capitulezi
+        punctInceput = listaPuncte[len(listaPuncte)-1]
+        punctSfarsit = listaPuncte[0]
+        index_puncte = 0
+        cv2.line(imagineDelimitata, punctInceput, punctSfarsit, (255, 0, 0), 1)
+        while index_puncte < len(listaPuncte)-1:
+            punctInceput = listaPuncte[index_puncte]
+            punctSfarsit = listaPuncte[index_puncte+1]
+            cv2.line(imagineDelimitata, punctInceput, punctSfarsit, (255,0,0), 1)
+            index_puncte+=1
+    else:
+        print("Nu am destule puncte!"+str(len(listaPuncte)))
     return imagineDelimitata
 
 if __name__ == '__main__':
@@ -153,7 +165,9 @@ if __name__ == '__main__':
                 current_frame_index += 1
 
         #aplicare filtru delimitare pe poza originala
-        imagineDelimitata = filtruDelimitare(1, resizedWidth, resizedHeight)
+        listaPuncte = ((100,100),(100,200),(200,200),(200,100),(300,150))
+        imagineDelimitata = filtruDelimitare(listaPuncte, resizedWidth, resizedHeight)
+        cv2.imshow("COX", imagineDelimitata)
         #inceput afisare
         imagini = [ frame, mask_buffer[-1], frame_buffer[-1], imagineDelimitata]  # lista cu imagini de afisat
         imagini2 = [ frame, mask_buffer[current_frame_index], frame_buffer[current_frame_index], imagineDelimitata]  # lista cu imagini de afisat
