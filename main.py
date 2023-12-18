@@ -1,22 +1,9 @@
 import numpy as np
 import cv2
-#import pandas as pd
 from collections import deque
 
-def drawLines(image):
-    # DB = Dark Blue
-    # LB = light Blue-
-    cv2.line(image, (100,195),(107,217),(255,0,0),5)
-    cv2.line(image, (264,168),(319,163),(255,0,0),5)
-    cv2.line(image, (452,200),(497,216),(255,0,0),5)
-    cv2.line(image, (348,265),(230,286),(255,0,0),5)
-    cv2.line(image, (156, 176), (260, 170), (255, 200, 200), 5)
-    cv2.line(image, (402, 173), (447, 196), (255, 200, 200), 5)
-    cv2.line(image, (479, 244), (352, 265), (255, 200, 200), 5)
-    cv2.line(image, (117, 258), (108, 219), (255, 200, 200), 5)
-    cv2.line(image, (155, 177), (323, 163), (0, 0, 0), 5)
 
-def afisare(lista_imagini, text_imagini, cadre_pe_linie = 2):
+def afisare(lista_imagini, text_imagini, cadre_pe_linie=2):
     nr_cadre = len(lista_imagini)
     nr_linii = int(np.ceil(nr_cadre / cadre_pe_linie))
     nr_coloane = cadre_pe_linie
@@ -44,36 +31,79 @@ def afisare(lista_imagini, text_imagini, cadre_pe_linie = 2):
 
     cv2.imshow('video', final)
 
-def filtruDelimitare(listaPuncte, latime, inaltime):
-    imagineDelimitata = np.zeros((int(latime), int(inaltime), 3), np.uint8)
-    if len(listaPuncte) >= 3:   #nu scimba la 2 ca il capitulezi
-        punctInceput = listaPuncte[len(listaPuncte)-1]
-        punctSfarsit = listaPuncte[0]
-        index_puncte = 0
-        cv2.line(imagineDelimitata, punctInceput, punctSfarsit, (255, 0, 0), 1)
-        while index_puncte < len(listaPuncte)-1:
-            punctInceput = listaPuncte[index_puncte]
-            punctSfarsit = listaPuncte[index_puncte+1]
-            cv2.line(imagineDelimitata, punctInceput, punctSfarsit, (255,0,0), 1)
-            index_puncte+=1
+
+def calculPunctMijloc(lista_puncte):
+    maximx = lista_puncte[0][0]
+    minimx = maximx
+    maximy = lista_puncte[0][1]
+    minimy = maximy
+
+    for punct in lista_puncte:
+        if punct[0] > maximx:
+            maximx = punct[0]
+        if punct[0] < minimx:
+            minimx = punct[0]
+        if punct[1] > maximy:
+            maximy = punct[1]
+        if punct[1] < minimy:
+            minimy = punct[1]
+
+    mijlocx = (maximx + minimx) / 2
+    mijlocy = (maximy + minimy) / 2
+    return mijlocx, mijlocy
+
+
+def filtruDelimitare(imagine_delimitata, lista_puncte):
+    # imagineDelimitata = np.zeros((int(latime), int(inaltime), 3), np.uint8)
+    if len(lista_puncte) >= 2:  # desenam liniile initiale
+        for index_puncte in range(-1, len(lista_puncte) - 1, 1):
+            cv2.line(imagine_delimitata, lista_puncte[index_puncte], lista_puncte[index_puncte + 1], (255, 0, 0), 3)
+        if len(lista_puncte) >= 3:  # facem fill
+            punctMijloc = calculPunctMijloc(lista_puncte)
+            print(punctMijloc)
+            cv2.circle(imagine_delimitata, (int(punctMijloc[0]), int(punctMijloc[1])), 10, (0, 0, 255), 3)
+            for index_puncte in range(-1, len(lista_puncte)-1, 1):
+                intersectii_stanga, intersectii_dreapta = 0, 0
+                if (lista_puncte[index_puncte][1] < punctMijloc[1] < lista_puncte[index_puncte + 1][1]) or (
+                        lista_puncte[index_puncte][1] > punctMijloc[1] > lista_puncte[index_puncte + 1][1]):
+                    # raza_y = np.linspace(lista_puncte[index_puncte][1], lista_puncte[index_puncte+1][1], num=)
+                    # daca dreapta poate fi intersectata
+                    coordonata_x = ((punctMijloc[1]-lista_puncte[index_puncte][1]) *
+                                    (lista_puncte[index_puncte+1][0]-lista_puncte[index_puncte][0])) / \
+                                   (lista_puncte[index_puncte+1][1]-lista_puncte[index_puncte][1]) + \
+                                   lista_puncte[index_puncte][0]
+                    cv2.circle(imagine_delimitata, (int(coordonata_x), int(punctMijloc[1])), 10, (0, 255, 0), 3)
+
     else:
-        print("Nu am destule puncte!"+str(len(listaPuncte)))
-    return imagineDelimitata
+        print("Nu am destule puncte!" + str(len(lista_puncte)))
+    return imagine_delimitata
+
+
+listaPuncte = list()
+
+
+def callbackMouse(event, mausx, mausy, flags, param):
+    global listaPuncte
+    # print(event, mausx, mausy)
+    if event == 1:
+        listaPuncte.append((mausx, mausy))
+        print(listaPuncte)
+    if event == 2:
+        listaPuncte.clear()
+
 
 if __name__ == '__main__':
     frame_buffer = deque(maxlen=100)
     mask_buffer = deque(maxlen=100)
     current_frame_index = 0
+    nume_imagine_filtru = 'COX'
     pause = False
     cap = cv2.VideoCapture('intersectie.mp4')
-    #frames_count, fps = cap.get(cv2.CAP_PROP_FRAME_COUNT), cap.get(cv2.CAP_PROP_FPS)
-    #width, height = cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    #print(frames_count, fps, width, height)
+    cv2.namedWindow(nume_imagine_filtru)
+    cv2.setMouseCallback(nume_imagine_filtru, callbackMouse)
 
-    # pandas dataframe = structura bidimensionala de tip tablou
-    # contine o linie pentru fiecare frame al videoclipului
-    #df = pd.DataFrame(index=range(int(frames_count)))
-    #df.index.name = "Frames"
+    events = [i for i in dir(cv2) if 'EVENT' in i]  # printeaza toate evenimentele disponibile
+    print(events)
 
     MINAREA = 300
     MAXAREA = 50000
@@ -134,22 +164,21 @@ if __name__ == '__main__':
                         cy = int(M['m01'] / M['m00'])
 
                         x, y, w, h = cv2.boundingRect(cnt)
-                        cv2.rectangle(image,(x,y), (x + w, y + h), (255, 0, 0), 2)
+                        cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 2)
                         cv2.putText(image, str(cx) + "," + str(cy), (cx + 10, cy + 10), cv2.FONT_HERSHEY_SIMPLEX,
-                                   .3, (0, 0, 255), 1)
-                        cv2.drawMarker(image, (cx, cy), (0, 0, 255), cv2.MARKER_STAR, markerSize=5, thickness=1, line_type=cv2.LINE_AA)
+                                    .3, (0, 0, 255), 1)
+                        cv2.drawMarker(image, (cx, cy), (0, 0, 255), cv2.MARKER_STAR, markerSize=5, thickness=1,
+                                       line_type=cv2.LINE_AA)
 
                         cxx[i] = cx
                         cyy[i] = cy
 
             cxx = cxx[cxx != 0]  # creaza un nou array selectand elementele care satisfac conditia
             cyy = cyy[cyy != 0]  # practic scapa de elementele cu valoare 0 , raman doar centrele care
-                                 # raman dupa conditiile de mai sus
+            # raman dupa conditiile de mai sus
 
-            if len(cxx) : # exista masini detectate in frame
+            if len(cxx):  # exista masini detectate in frame
                 pass
-
-
 
         key = cv2.waitKey(10)
         if key == ord('q'):  # Press 'q' to exit
@@ -164,13 +193,15 @@ if __name__ == '__main__':
             if pause and current_frame_index + 1 < len(frame_buffer) - 1:
                 current_frame_index += 1
 
-        #aplicare filtru delimitare pe poza originala
-        listaPuncte = ((100,100),(100,200),(200,200),(200,100),(300,150))
-        imagineDelimitata = filtruDelimitare(listaPuncte, resizedWidth, resizedHeight)
+        # aplicare filtru delimitare pe poza originala
+        listaPuncte1 = ((100, 100), (100, 200), (200, 200), (200, 100), (300, 150))
+        sursa_temporara_filtru = np.zeros((resizedWidth, resizedHeight, 3), np.uint8)
+        imagineDelimitata = filtruDelimitare(sursa_temporara_filtru, listaPuncte)
         cv2.imshow("COX", imagineDelimitata)
-        #inceput afisare
-        imagini = [ frame, mask_buffer[-1], frame_buffer[-1], imagineDelimitata]  # lista cu imagini de afisat
-        imagini2 = [ frame, mask_buffer[current_frame_index], frame_buffer[current_frame_index], imagineDelimitata]  # lista cu imagini de afisat
+        # inceput afisare
+        imagini = [frame, mask_buffer[-1], frame_buffer[-1], imagineDelimitata]  # lista cu imagini de afisat
+        imagini2 = [frame, mask_buffer[current_frame_index], frame_buffer[current_frame_index],
+                    imagineDelimitata]  # lista cu imagini de afisat
         texte = ["original", "finalMask", "image", "imagine delimitata"]  # lista cu numele fiecarei imagini
         numar_de_imagini_pe_linie = 2
         if not pause:
