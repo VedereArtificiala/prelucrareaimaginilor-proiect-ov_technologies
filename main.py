@@ -53,27 +53,35 @@ def calculPunctMijloc(lista_puncte):
     return mijlocx, mijlocy
 
 
-def filtruDelimitare(imagine_delimitata, lista_puncte):
-    # imagineDelimitata = np.zeros((int(latime), int(inaltime), 3), np.uint8)
+def filtruDelimitare(imagine_delimitata, lista_puncte, latime, inaltime):
+    mascaCreata = np.zeros((int(latime)+2, int(inaltime)+2), np.uint8)
     if len(lista_puncte) >= 2:  # desenam liniile initiale
         for index_puncte in range(-1, len(lista_puncte) - 1, 1):
-            cv2.line(imagine_delimitata, lista_puncte[index_puncte], lista_puncte[index_puncte + 1], (255, 0, 0), 3)
+            cv2.line(imagine_delimitata, lista_puncte[index_puncte], lista_puncte[index_puncte + 1], (255, 0, 0), 1)
         if len(lista_puncte) >= 3:  # facem fill
             punctMijloc = calculPunctMijloc(lista_puncte)
             print(punctMijloc)
-            cv2.circle(imagine_delimitata, (int(punctMijloc[0]), int(punctMijloc[1])), 10, (0, 0, 255), 3)
+            #cv2.circle(imagine_delimitata, (int(punctMijloc[0]), int(punctMijloc[1])), 10, (0, 0, 255), 3)
+            x_maxim_stanga, x_maxim_dreapta = punctMijloc[0], punctMijloc[1]
             for index_puncte in range(-1, len(lista_puncte)-1, 1):
-                intersectii_stanga, intersectii_dreapta = 0, 0
-                if (lista_puncte[index_puncte][1] < punctMijloc[1] < lista_puncte[index_puncte + 1][1]) or (
-                        lista_puncte[index_puncte][1] > punctMijloc[1] > lista_puncte[index_puncte + 1][1]):
-                    # raza_y = np.linspace(lista_puncte[index_puncte][1], lista_puncte[index_puncte+1][1], num=)
+                if (lista_puncte[index_puncte][1] <= punctMijloc[1] <= lista_puncte[index_puncte + 1][1]) or (
+                        lista_puncte[index_puncte][1] >= punctMijloc[1] >= lista_puncte[index_puncte + 1][1]):
                     # daca dreapta poate fi intersectata
                     coordonata_x = ((punctMijloc[1]-lista_puncte[index_puncte][1]) *
                                     (lista_puncte[index_puncte+1][0]-lista_puncte[index_puncte][0])) / \
                                    (lista_puncte[index_puncte+1][1]-lista_puncte[index_puncte][1]) + \
                                    lista_puncte[index_puncte][0]
-                    cv2.circle(imagine_delimitata, (int(coordonata_x), int(punctMijloc[1])), 10, (0, 255, 0), 3)
-
+                    #cv2.circle(imagine_delimitata, (int(coordonata_x), int(punctMijloc[1])), 10, (0, 255, 0), 3)
+                    if coordonata_x < x_maxim_stanga:
+                        x_maxim_stanga = coordonata_x
+                    elif coordonata_x > x_maxim_dreapta:
+                        x_maxim_dreapta = coordonata_x
+            #cv2.circle(imagine_delimitata, (int(x_maxim_stanga), int(punctMijloc[1])), 10, (255, 0, 0), 3)
+            #cv2.circle(imagine_delimitata, (int(x_maxim_dreapta), int(punctMijloc[1])), 10, (255, 0, 0), 3)
+            if x_maxim_stanga != punctMijloc[0]:
+                cv2.floodFill(imagine_delimitata, mascaCreata, (int(x_maxim_stanga)+5, int(punctMijloc[1])), (255, 0, 0))
+            else:
+                cv2.floodFill(imagine_delimitata, mascaCreata, (int(x_maxim_dreapta)-5, int(punctMijloc[1])), (255, 0, 0))
     else:
         print("Nu am destule puncte!" + str(len(lista_puncte)))
     return imagine_delimitata
@@ -196,7 +204,7 @@ if __name__ == '__main__':
         # aplicare filtru delimitare pe poza originala
         listaPuncte1 = ((100, 100), (100, 200), (200, 200), (200, 100), (300, 150))
         sursa_temporara_filtru = np.zeros((resizedWidth, resizedHeight, 3), np.uint8)
-        imagineDelimitata = filtruDelimitare(sursa_temporara_filtru, listaPuncte)
+        imagineDelimitata = filtruDelimitare(sursa_temporara_filtru, listaPuncte, resizedWidth, resizedHeight)
         cv2.imshow("COX", imagineDelimitata)
         # inceput afisare
         imagini = [frame, mask_buffer[-1], frame_buffer[-1], imagineDelimitata]  # lista cu imagini de afisat
