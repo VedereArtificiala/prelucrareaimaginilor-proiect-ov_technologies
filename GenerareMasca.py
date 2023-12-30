@@ -73,6 +73,34 @@ def regiuniDelimitare(imagine, lista_puncte, culoare):
     return imag_aux
 
 
+def scriereMascaFisier():
+    global listaRegiuniDelimitare
+    fisier = open("puncteMasca.txt", "w")
+    for listaPuncteMasca in listaRegiuniDelimitare:
+        for punct in listaPuncteMasca:
+            fisier.write(str(punct[0])+" "+str(punct[1])+" ")
+        fisier.write("\n")
+    fisier.close()
+
+
+def citireMascaFisier():
+    global listaRegiuniDelimitare, numarRegiuniSalvate, index_regiune_curenta
+    numarRegiuniSalvate = 0
+    index_regiune_curenta = 0
+    listaRegiuniDelimitare = list()
+    fisier = open("puncteMasca.txt", "r")
+    for linie in fisier:
+        listaNumereString = linie.split()
+        listaPunctee = list()
+        for i in range(0, len(listaNumereString), 2):
+            # print(listaNumereString[i], listaNumereString[i+1])
+            listaPunctee.append((int(listaNumereString[i]), int(listaNumereString[i+1])))
+        listaRegiuniDelimitare.append(listaPunctee)
+        numarRegiuniSalvate += 1
+    index_regiune_curenta = numarRegiuniSalvate
+    fisier.close()
+
+
 def callbackMouse(event, mausx, mausy, flags, param):
     global listaPuncte
     # print(event, mausx, mausy)
@@ -85,10 +113,12 @@ def callbackMouse(event, mausx, mausy, flags, param):
 
 def callbackButonIncarcareMasca(par1, par2):
     print(par1, par2)
+    citireMascaFisier()
 
 
 def callbackButonSalvareMasca(par1, par2):
     print(par1, par2)
+    scriereMascaFisier()
 
 
 def callbackButonAfisareAlternativa(par1, par2):
