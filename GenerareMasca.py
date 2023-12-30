@@ -150,7 +150,11 @@ if __name__ == '__main__':
         key = cv2.waitKey(16)
         if key == ord('q'):  # Press 'q' to exit
             break
-        if key == ord('w'): # w sa trec la urmatoarea regiune
+        if key == ord('e'): # e sa dau cycle printre regiuni
+            index_regiune_curenta += 1
+            if index_regiune_curenta > numarRegiuniSalvate:
+                index_regiune_curenta = 0
+        if key == ord('w'): # w sa salvez regiunea
             if len(listaPuncte) >= 3:
                 listaRegiuniDelimitare.append(list(listaPuncte))
                 numarRegiuniSalvate += 1
@@ -162,10 +166,14 @@ if __name__ == '__main__':
         # aplicare filtru delimitare pe poza originala
         MascaDelimitare = np.zeros((int(latime), int(inaltime)), np.uint8)
         imagineRegionata = frame.copy()
-        for puncteRegiune in listaRegiuniDelimitare:
-            imagineRegionata = regiuniDelimitare(imagineRegionata, puncteRegiune, (0, 255, 0))  # regiunile salvate deja
-            MascaDelimitare = generareMascaDelimitare(MascaDelimitare, puncteRegiune, latime, inaltime,
-                                                      listaRegiuniDelimitare.index(puncteRegiune))
+        # for puncteRegiune in listaRegiuniDelimitare:
+        for i in range(0, len(listaRegiuniDelimitare)):
+            if i == index_regiune_curenta:
+                imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (255, 255, 0))  # regiunile salvate deja
+            else:
+                imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (0, 255, 0))  # regiunile salvate deja
+            MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaRegiuniDelimitare[i], latime, inaltime,
+                                                      listaRegiuniDelimitare.index(listaRegiuniDelimitare[i]))
         MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaPuncte, latime, inaltime, numarRegiuniSalvate)
         imagineRegionata = regiuniDelimitare(imagineRegionata, listaPuncte, (0, 0, 255))  # regiunea inca in lucru
 
