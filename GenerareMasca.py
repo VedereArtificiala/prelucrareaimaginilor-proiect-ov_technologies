@@ -29,10 +29,14 @@ def calculPunctMijloc(lista_puncte):
     return mijlocx, mijlocy
 
 
-def generareMascaDelimitare(imagine_sursa, lista_puncte, latime, inaltime, numarRegiune):
+def generareMascaDelimitare(imagine_sursa, lista_puncte, latime, inaltime, numarRegiune):  # 0 < numarRegiune < 23
     mascaCreata = np.zeros((int(latime)+2, int(inaltime)+2), np.uint8)
-    # imagine_delimitata = np.zeros((int(latime), int(inaltime)), np.uint8)
-    culoare = (50 + numarRegiune * 10, 50 + numarRegiune * 10, 50 + numarRegiune * 10)
+    # print(1 << numarRegiune)
+    if numarRegiune > 23:
+        print("numar de regiune prea mare (>23), masca nu e corecta!")
+    numarMasca = 1 << numarRegiune
+    print(format(int(numarMasca / 65536) % 256, '08b')+" "+format(int(numarMasca / 256) % 256, '08b')+" "+format(numarMasca % 256, '08b'))
+    culoare = ((numarMasca / 65536) % 256, (numarMasca / 256) % 256, numarMasca % 256)
     if len(lista_puncte) >= 2:  # desenam liniile initiale
         for index_puncte in range(-1, len(lista_puncte) - 1, 1):
             cv2.line(imagine_sursa, lista_puncte[index_puncte], lista_puncte[index_puncte + 1], culoare, 1)
@@ -69,7 +73,7 @@ def regiuniDelimitare(imagine, lista_puncte, culoare):
     imag_aux = imagine.copy()
     if len(lista_puncte) >= 2:  # desenam liniile initiale
         for index_puncte in range(-1, len(lista_puncte) - 1, 1):
-            cv2.line(imag_aux, lista_puncte[index_puncte], lista_puncte[index_puncte + 1], culoare, 3)
+            cv2.line(imag_aux, lista_puncte[index_puncte], lista_puncte[index_puncte + 1], culoare, 2)
     return imag_aux
 
 
@@ -173,7 +177,7 @@ if __name__ == '__main__':
                 index_regiune_curenta = numarRegiuniSalvate
 
         # aplicare filtru delimitare pe poza originala
-        MascaDelimitare = np.zeros((int(latime), int(inaltime)), np.uint8)
+        MascaDelimitare = np.zeros((int(latime), int(inaltime), 3), np.uint8)
         imagineRegionata = frame.copy()
         # for puncteRegiune in listaRegiuniDelimitare:
         for i in range(0, len(listaRegiuniDelimitare)):
@@ -185,6 +189,7 @@ if __name__ == '__main__':
                 imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (0, 255, 0))
             MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaRegiuniDelimitare[i], latime, inaltime,
                                                       listaRegiuniDelimitare.index(listaRegiuniDelimitare[i]))
+        # regiunea in lucru
         MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaPuncte, latime, inaltime, numarRegiuniSalvate)
         imagineRegionata = regiuniDelimitare(imagineRegionata, listaPuncte, (0, 0, 255))  # regiunea inca in lucru
 
