@@ -29,14 +29,16 @@ def calculPunctMijloc(lista_puncte):
     return mijlocx, mijlocy
 
 
-def generareMascaDelimitare(imagine_sursa, lista_puncte, latime, inaltime, numarRegiune):  # 0 < numarRegiune < 23
+def generareMascaDelimitare(lista_puncte, latime, inaltime, numarRegiune):  # 0 < numarRegiune < 23
+    imagine_sursa = np.zeros((int(latime), int(inaltime), 3), np.uint8)
     mascaCreata = np.zeros((int(latime)+2, int(inaltime)+2), np.uint8)
     # print(1 << numarRegiune)
     if numarRegiune > 23:
         print("numar de regiune prea mare (>23), masca nu e corecta!")
     numarMasca = 1 << numarRegiune
-    print(format(int(numarMasca / 65536) % 256, '08b')+" "+format(int(numarMasca / 256) % 256, '08b')+" "+format(numarMasca % 256, '08b'))
-    culoare = ((numarMasca / 65536) % 256, (numarMasca / 256) % 256, numarMasca % 256)
+    print(format((numarMasca >> 16) % 256, '08b')+" "+format((numarMasca >> 8) % 256, '08b')+" " +
+          format(numarMasca % 256, '08b'))
+    culoare = ((numarMasca >> 16) % 256, (numarMasca >> 8) % 256, numarMasca % 256)
     if len(lista_puncte) >= 2:  # desenam liniile initiale
         for index_puncte in range(-1, len(lista_puncte) - 1, 1):
             cv2.line(imagine_sursa, lista_puncte[index_puncte], lista_puncte[index_puncte + 1], culoare, 1)
@@ -177,20 +179,27 @@ if __name__ == '__main__':
                 index_regiune_curenta = numarRegiuniSalvate
 
         # aplicare filtru delimitare pe poza originala
-        MascaDelimitare = np.zeros((int(latime), int(inaltime), 3), np.uint8)
+        listaMastiDelimitare = list()
         imagineRegionata = frame.copy()
         # for puncteRegiune in listaRegiuniDelimitare:
         for i in range(0, len(listaRegiuniDelimitare)):
+            # regiunile salvate deja
             if i == index_regiune_curenta:
-                # regiunile salvate deja
+                # coloreaza diferit regiunea curenta (selectata)
                 imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (255, 255, 0))
             else:
-                # regiunile salvate deja
+                # coloreaza normal regiunile neselectate
                 imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (0, 255, 0))
-            MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaRegiuniDelimitare[i], latime, inaltime,
-                                                      listaRegiuniDelimitare.index(listaRegiuniDelimitare[i]))
+            # MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaRegiuniDelimitare[i], latime, inaltime, listaRegiuniDelimitare.index(listaRegiuniDelimitare[i]))
+            listaMastiDelimitare.append(generareMascaDelimitare(listaRegiuniDelimitare[i], latime,
+                                                                inaltime, listaRegiuniDelimitare.index(listaRegiuniDelimitare[i])))
         # regiunea in lucru
-        MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaPuncte, latime, inaltime, numarRegiuniSalvate)
+        # MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaPuncte, latime, inaltime, numarRegiuniSalvate)
+        listaMastiDelimitare.append(generareMascaDelimitare(listaPuncte, latime, inaltime, numarRegiuniSalvate))
+        # construire masca finala
+        MascaDelimitare = np.zeros((int(latime), int(inaltime), 3), np.uint8)
+        for masca in listaMastiDelimitare:
+            MascaDelimitare += masca
         imagineRegionata = regiuniDelimitare(imagineRegionata, listaPuncte, (0, 0, 255))  # regiunea inca in lucru
 
         cv2.putText(imagineRegionata, "Q - quit, W - salv. regiune, A si D - selectie regiune, S - sterge regiune, "
