@@ -150,11 +150,15 @@ if __name__ == '__main__':
         key = cv2.waitKey(16)
         if key == ord('q'):  # Press 'q' to exit
             break
-        if key == ord('e'): # e sa dau cycle printre regiuni
+        if key == ord('d'):  # d sa trec la urmatoarea regiune
             index_regiune_curenta += 1
             if index_regiune_curenta > numarRegiuniSalvate:
                 index_regiune_curenta = 0
-        if key == ord('w'): # w sa salvez regiunea
+        if key == ord('a'):  # a sa trec la regiunea din urma
+            index_regiune_curenta -= 1
+            if index_regiune_curenta < 0:
+                index_regiune_curenta = numarRegiuniSalvate
+        if key == ord('w'):  # w sa salvez regiunea
             if len(listaPuncte) >= 3:
                 listaRegiuniDelimitare.append(list(listaPuncte))
                 numarRegiuniSalvate += 1
@@ -162,6 +166,11 @@ if __name__ == '__main__':
                 listaPuncte.clear()
             else:
                 print("nu sunt destule puncte pentru a salva regiunea!")
+        if key == ord('s'):  # s sa sterg regiunea selectata
+            if numarRegiuniSalvate > 0 and index_regiune_curenta is not numarRegiuniSalvate:
+                listaRegiuniDelimitare.remove(listaRegiuniDelimitare[index_regiune_curenta])
+                numarRegiuniSalvate -= 1
+                index_regiune_curenta = numarRegiuniSalvate
 
         # aplicare filtru delimitare pe poza originala
         MascaDelimitare = np.zeros((int(latime), int(inaltime)), np.uint8)
@@ -169,18 +178,23 @@ if __name__ == '__main__':
         # for puncteRegiune in listaRegiuniDelimitare:
         for i in range(0, len(listaRegiuniDelimitare)):
             if i == index_regiune_curenta:
-                imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (255, 255, 0))  # regiunile salvate deja
+                # regiunile salvate deja
+                imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (255, 255, 0))
             else:
-                imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (0, 255, 0))  # regiunile salvate deja
+                # regiunile salvate deja
+                imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (0, 255, 0))
             MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaRegiuniDelimitare[i], latime, inaltime,
                                                       listaRegiuniDelimitare.index(listaRegiuniDelimitare[i]))
         MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaPuncte, latime, inaltime, numarRegiuniSalvate)
         imagineRegionata = regiuniDelimitare(imagineRegionata, listaPuncte, (0, 0, 255))  # regiunea inca in lucru
 
-        cv2.putText(imagineRegionata, "Regiunea selectata: "+str(index_regiune_curenta), (5, 25), cv2.FONT_HERSHEY_SIMPLEX,
-                    1, (50, 250, 50), 2, cv2.LINE_AA)
-        cv2.putText(imagineRegionata, "Numar regiuni salvate: " + str(numarRegiuniSalvate), (5, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (50, 250, 50), 2, cv2.LINE_AA)
+        cv2.putText(imagineRegionata, "Q - quit, W - salv. regiune, A si D - selectie regiune, S - sterge regiune, "
+                                      "Ctrl+P - meniu", (5, 25), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 2,
+                    cv2.LINE_8)
+        cv2.putText(imagineRegionata, "Regiunea selectata: "+str(index_regiune_curenta), (5, 50),
+                    cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 2, cv2.LINE_8)
+        cv2.putText(imagineRegionata, "Numar regiuni salvate: " + str(numarRegiuniSalvate), (5, 75),
+                    cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 2, cv2.LINE_8)
 
         if modAfisareAlternativ is True:
             cv2.imshow(nume_imagine_filtru, MascaDelimitare)
