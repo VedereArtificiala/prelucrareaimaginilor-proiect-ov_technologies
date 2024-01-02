@@ -1,6 +1,10 @@
 import numpy as np
 import cv2
 from collections import deque
+import GenerareMasca
+
+listaPuncte = list()
+numarMasti = 0
 
 
 def afisare(lista_imagini, text_imagini, cadre_pe_linie=2):
@@ -32,106 +36,13 @@ def afisare(lista_imagini, text_imagini, cadre_pe_linie=2):
     cv2.imshow('video', final)
 
 
-def calculPunctMijloc(lista_puncte):
-    maximx = lista_puncte[0][0]
-    minimx = maximx
-    maximy = lista_puncte[0][1]
-    minimy = maximy
-
-    for punct in lista_puncte:
-        if punct[0] > maximx:
-            maximx = punct[0]
-        if punct[0] < minimx:
-            minimx = punct[0]
-        if punct[1] > maximy:
-            maximy = punct[1]
-        if punct[1] < minimy:
-            minimy = punct[1]
-
-    mijlocx = (maximx + minimx) / 2
-    mijlocy = (maximy + minimy) / 2
-    return mijlocx, mijlocy
-
-
-def filtruDelimitare(lista_puncte, latime, inaltime):
-    mascaCreata = np.zeros((int(latime)+2, int(inaltime)+2), np.uint8)
-    imagine_delimitata = np.zeros((int(latime), int(inaltime)), np.uint8)
-    if len(lista_puncte) >= 2:  # desenam liniile initiale
-        for index_puncte in range(-1, len(lista_puncte) - 1, 1):
-            cv2.line(imagine_delimitata, lista_puncte[index_puncte], lista_puncte[index_puncte + 1], (255, 255, 255), 1)
-        if len(lista_puncte) >= 3:  # facem fill
-            punctMijloc = calculPunctMijloc(lista_puncte)
-            # print(punctMijloc)
-            # cv2.circle(imagine_delimitata, (int(punctMijloc[0]), int(punctMijloc[1])), 10, (0, 0, 255), 3)
-            x_maxim_stanga, x_maxim_dreapta = punctMijloc[0], punctMijloc[1]
-            for index_puncte in range(-1, len(lista_puncte)-1, 1):
-                if (lista_puncte[index_puncte][1] <= punctMijloc[1] <= lista_puncte[index_puncte + 1][1]) or (
-                        lista_puncte[index_puncte][1] >= punctMijloc[1] >= lista_puncte[index_puncte + 1][1]):
-                    # daca dreapta poate fi intersectata
-                    coordonata_x = ((punctMijloc[1]-lista_puncte[index_puncte][1]) *
-                                    (lista_puncte[index_puncte+1][0]-lista_puncte[index_puncte][0])) / \
-                                   (lista_puncte[index_puncte+1][1]-lista_puncte[index_puncte][1]) + \
-                                   lista_puncte[index_puncte][0]
-                    # cv2.circle(imagine_delimitata, (int(coordonata_x), int(punctMijloc[1])), 10, (0, 255, 0), 3)
-                    if coordonata_x < x_maxim_stanga:
-                        x_maxim_stanga = coordonata_x
-                    elif coordonata_x > x_maxim_dreapta:
-                        x_maxim_dreapta = coordonata_x
-            # cv2.circle(imagine_delimitata, (int(x_maxim_stanga), int(punctMijloc[1])), 10, (255, 0, 0), 3)
-            # cv2.circle(imagine_delimitata, (int(x_maxim_dreapta), int(punctMijloc[1])), 10, (255, 0, 0), 3)
-            if x_maxim_stanga != punctMijloc[0]:
-                cv2.floodFill(imagine_delimitata, mascaCreata, (int(x_maxim_stanga)+5, int(punctMijloc[1])), (255, 255, 255))
-            else:
-                cv2.floodFill(imagine_delimitata, mascaCreata, (int(x_maxim_dreapta)-5, int(punctMijloc[1])), (255, 255, 255))
-    # else:
-        # print("Nu am destule puncte!" + str(len(lista_puncte)))
-    return imagine_delimitata
-
-
-def regiuniDelimitare(imagine, lista_puncte):
-    if len(lista_puncte) >= 2:  # desenam liniile initiale
-        for index_puncte in range(-1, len(lista_puncte) - 1, 1):
-            cv2.line(imagine, lista_puncte[index_puncte], lista_puncte[index_puncte + 1], (255, 0, 0), 3)
-    return imagine
-
-
-listaPuncte = list()
-
-
-def callbackMouse(event, mausx, mausy, flags, param):
-    global listaPuncte
-    # print(event, mausx, mausy)
-    if event == 1:
-        listaPuncte.append((mausx, mausy))
-        print(listaPuncte)
-    if event == 2:
-        listaPuncte.clear()
-
-
-def callbackButonIncarcareMasca(par1, par2):
-    print(par1, par2)
-
-
-def callbackButonSalvareMasca(par1, par2):
-    print(par1, par2)
-
-
-def callbackButonUrmatoareaMasca(par1, par2):
-    print(par1, par2)
-
-
 if __name__ == '__main__':
     frame_buffer = deque(maxlen=100)
     mask_buffer = deque(maxlen=100)
     current_frame_index = 0
-    nume_imagine_filtru = 'Desenare_Filtru'
     pause = False
     cap = cv2.VideoCapture('intersectie.mp4')
-    cv2.namedWindow(nume_imagine_filtru)
-    cv2.setMouseCallback(nume_imagine_filtru, callbackMouse)
-    cv2.createButton("Incarcare masca", callbackButonIncarcareMasca, cv2.QT_PUSH_BUTTON)
-    cv2.createButton("Salvare masca", callbackButonSalvareMasca, cv2.QT_PUSH_BUTTON)
-    cv2.createButton("Urmatoarea masca", callbackButonUrmatoareaMasca, cv2.QT_PUSH_BUTTON)
+
     events = [i for i in dir(cv2) if 'EVENT' in i]  # printeaza toate evenimentele disponibile
     print(events)
 
@@ -148,6 +59,8 @@ if __name__ == '__main__':
     kernel2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
 
     read_frame_index = 0
+    mascaGenerata = GenerareMasca.generareMascaFisier()  # incarca masca facuta cu scriptul GenerareMasca
+    mascaGenerata = cv2.resize(mascaGenerata, (0, 0), None, ratio, ratio)  # resize image
     while True:
         if not pause:
             ret, frame = cap.read()
@@ -200,8 +113,7 @@ if __name__ == '__main__':
                         cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 2)
                         cv2.putText(image, str(cx) + "," + str(cy), (cx + 10, cy + 10), cv2.FONT_HERSHEY_SIMPLEX,
                                     .3, (0, 0, 255), 1)
-                        cv2.drawMarker(image, (cx, cy), (0, 0, 255), cv2.MARKER_STAR, markerSize=5, thickness=1,
-                                       line_type=cv2.LINE_AA)
+                        cv2.drawMarker(image, (cx, cy), (0, 0, 255), cv2.MARKER_STAR, markerSize=5, thickness=1, line_type=cv2.LINE_AA)
 
                         cxx[i] = cx
                         cyy[i] = cy
@@ -225,18 +137,13 @@ if __name__ == '__main__':
         elif key == ord('d'):  # Press '>' to move forward
             if pause and current_frame_index + 1 < len(frame_buffer) - 1:
                 current_frame_index += 1
-        # aplicare filtru delimitare pe poza originala
-        #sursa_temporara_filtru = np.zeros((resizedWidth, resizedHeight, 3), np.uint8)
-        imagineDelimitata = filtruDelimitare(listaPuncte, resizedWidth, resizedHeight)
-        imagineRegionata = regiuniDelimitare(frame, listaPuncte)
-        cv2.imshow(nume_imagine_filtru, imagineRegionata)
 
         # inceput afisare
-        imagini = [frame, mask_buffer[-1], frame_buffer[-1], imagineDelimitata, imagineRegionata]  # lista cu imagini de afisat
-        imagini2 = [frame, mask_buffer[current_frame_index], frame_buffer[current_frame_index],
-                    imagineDelimitata, imagineRegionata]  # lista cu imagini de afisat
-        texte = ["frame "+str(read_frame_index), "finalMask", "image", "imagine delimitata", "imagineRegionata"]  # lista cu numele fiecarei imagini
-        numar_de_imagini_pe_linie = 3
+        mascaGenerataNoText = mascaGenerata.copy()
+        imagini = [frame, mask_buffer[-1], frame_buffer[-1], mascaGenerataNoText]  # lista cu imagini de afisat
+        imagini2 = [frame, mask_buffer[current_frame_index], frame_buffer[current_frame_index], mascaGenerataNoText]  # lista cu imagini de afisat
+        texte = ["frame "+str(read_frame_index), "finalMask", "image", "Masca generata"]  # lista cu numele fiecarei imagini
+        numar_de_imagini_pe_linie = 2
         if not pause:
             afisare(imagini, texte, numar_de_imagini_pe_linie)
         else:

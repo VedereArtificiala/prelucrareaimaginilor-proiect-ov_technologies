@@ -8,6 +8,7 @@ index_regiune_curenta = 0
 modAfisareAlternativ = False
 addedBrightness = 0
 
+
 def calculPunctMijloc(lista_puncte):
     maximx = lista_puncte[0][0]
     minimx = maximx
@@ -31,7 +32,7 @@ def calculPunctMijloc(lista_puncte):
 
 def generareMascaDelimitare(lista_puncte, latime, inaltime, numarRegiune, extraBrightness=0):  # 0 < numarRegiune < 23
     imagine_sursa = np.zeros((int(latime), int(inaltime), 3), np.uint8)
-    mascaCreata = np.zeros((int(latime)+2, int(inaltime)+2), np.uint8)
+    # mascaCreata = np.zeros((int(latime)+2, int(inaltime)+2), np.uint8)
     # print(1 << numarRegiune)
     if numarRegiune > 23:
         print("numar de regiune prea mare (>23), masca nu e corecta!")
@@ -97,7 +98,7 @@ def regiuniDelimitare(imagine, lista_puncte, culoare, grosime):
     return imag_aux
 
 
-def scriereMascaFisier():
+def scrierePuncteFisier():
     global listaRegiuniDelimitare
     fisier = open("puncteMasca.txt", "w")
     for listaPuncteMasca in listaRegiuniDelimitare:
@@ -107,7 +108,7 @@ def scriereMascaFisier():
     fisier.close()
 
 
-def citireMascaFisier():
+def citirePuncteFisier():
     global listaRegiuniDelimitare, numarRegiuniSalvate, index_regiune_curenta
     numarRegiuniSalvate = 0
     index_regiune_curenta = 0
@@ -125,6 +126,19 @@ def citireMascaFisier():
     fisier.close()
 
 
+def generareMascaFisier():
+    citirePuncteFisier()
+    listaMastiGenerate = list()
+    latime = 1080  # le am pe dos in tot proiectul cred, aia e
+    inaltime = 1920
+    for i in range(0, len(listaRegiuniDelimitare)):
+        listaMastiGenerate.append(generareMascaDelimitare(listaRegiuniDelimitare[i], latime, inaltime, listaRegiuniDelimitare.index(listaRegiuniDelimitare[i])))
+    mascaFinala = np.zeros((int(latime), int(inaltime), 3), np.uint8)
+    for imagine in listaMastiGenerate:
+        mascaFinala += imagine
+    return mascaFinala
+
+
 def callbackMouse(event, mausx, mausy, flags, param):
     global listaPuncte
     # print(event, mausx, mausy)
@@ -137,12 +151,12 @@ def callbackMouse(event, mausx, mausy, flags, param):
 
 def callbackButonIncarcareMasca(par1, par2):
     # print(par1, par2)
-    citireMascaFisier()
+    citirePuncteFisier()
 
 
 def callbackButonSalvareMasca(par1, par2):
     # print(par1, par2)
-    scriereMascaFisier()
+    scrierePuncteFisier()
 
 
 def callbackButonAfisareAlternativa(par1, par2):
@@ -175,7 +189,10 @@ if __name__ == '__main__':
     if frame is None:  # nu a citit frame, probabil path prost de fisier
         print("Nu am putut citi niciun frame!")
     latime, inaltime, canale = frame.shape
+    print(latime, inaltime)
 
+    mascaGenerata = generareMascaFisier()
+    cv2.imshow("testGenerareMasca", mascaGenerata)
     while True:
         key = cv2.waitKey(16)
         if key == ord('q'):  # Press 'q' to exit
@@ -205,7 +222,6 @@ if __name__ == '__main__':
         # aplicare filtru delimitare pe poza originala
         listaMastiDelimitare = list()
         imagineRegionata = frame.copy()
-        # for puncteRegiune in listaRegiuniDelimitare:
         for i in range(0, len(listaRegiuniDelimitare)):
             # regiunile salvate deja
             if i == index_regiune_curenta:
@@ -217,7 +233,6 @@ if __name__ == '__main__':
             listaMastiDelimitare.append(generareMascaDelimitare(listaRegiuniDelimitare[i], latime, inaltime,
                                                                 listaRegiuniDelimitare.index(listaRegiuniDelimitare[i]), addedBrightness))
         # regiunea in lucru
-        # MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaPuncte, latime, inaltime, numarRegiuniSalvate)
         listaMastiDelimitare.append(generareMascaDelimitare(listaPuncte, latime, inaltime, numarRegiuniSalvate, addedBrightness))
         # construire masca finala
         MascaDelimitare = np.zeros((int(latime), int(inaltime), 3), np.uint8)
@@ -226,8 +241,7 @@ if __name__ == '__main__':
         imagineRegionata = regiuniDelimitare(imagineRegionata, listaPuncte, (0, 0, 255), 2)  # regiunea inca in lucru
 
         cv2.putText(imagineRegionata, "Q - quit, W - salv. lista, A si D - sel. lista, S - sterge lista, "
-                                      "Ctrl+P - meniu, rotita - sterge lista in lucru", (5, 25), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 2,
-                    cv2.LINE_8)
+                                      "Ctrl+P - meniu, rotita - sterge lista in lucru", (5, 25), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 2, cv2.LINE_8)
         cv2.putText(imagineRegionata, "Regiunea selectata: "+str(index_regiune_curenta), (5, 50),
                     cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 2, cv2.LINE_8)
         cv2.putText(imagineRegionata, "Numar regiuni salvate: " + str(numarRegiuniSalvate), (5, 75),
