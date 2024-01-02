@@ -36,8 +36,8 @@ def generareMascaDelimitare(lista_puncte, latime, inaltime, numarRegiune):  # 0 
     if numarRegiune > 23:
         print("numar de regiune prea mare (>23), masca nu e corecta!")
     numarMasca = 1 << numarRegiune
-    print(format((numarMasca >> 16) % 256, '08b')+" "+format((numarMasca >> 8) % 256, '08b')+" " +
-          format(numarMasca % 256, '08b'))
+    # print(format((numarMasca >> 16) % 256, '08b')+" "+format((numarMasca >> 8) % 256, '08b')+" " +
+    #      format(numarMasca % 256, '08b'))
     culoare = ((numarMasca >> 16) % 256, (numarMasca >> 8) % 256, numarMasca % 256)
     if len(lista_puncte) >= 2:  # desenam liniile initiale
         for index_puncte in range(-1, len(lista_puncte) - 1, 1):
@@ -46,7 +46,8 @@ def generareMascaDelimitare(lista_puncte, latime, inaltime, numarRegiune):  # 0 
             punctMijloc = calculPunctMijloc(lista_puncte)
             # print(punctMijloc)
             # cv2.circle(imagine_delimitata, (int(punctMijloc[0]), int(punctMijloc[1])), 10, (0, 0, 255), 3)
-            x_maxim_stanga, x_maxim_dreapta = punctMijloc[0], punctMijloc[1]
+            x_maxim_stanga, x_maxim_stanga_2, x_maxim_dreapta, x_maxim_dreapta_2 = punctMijloc[0], punctMijloc[0], \
+                punctMijloc[0], punctMijloc[0]
             for index_puncte in range(-1, len(lista_puncte)-1, 1):
                 if (lista_puncte[index_puncte][1] <= punctMijloc[1] <= lista_puncte[index_puncte + 1][1]) or (
                         lista_puncte[index_puncte][1] >= punctMijloc[1] >= lista_puncte[index_puncte + 1][1]):
@@ -55,27 +56,45 @@ def generareMascaDelimitare(lista_puncte, latime, inaltime, numarRegiune):  # 0 
                                     (lista_puncte[index_puncte+1][0]-lista_puncte[index_puncte][0])) / \
                                    (lista_puncte[index_puncte+1][1]-lista_puncte[index_puncte][1]) + \
                                    lista_puncte[index_puncte][0]
-                    # cv2.circle(imagine_delimitata, (int(coordonata_x), int(punctMijloc[1])), 10, (0, 255, 0), 3)
+                    # cv2.circle(imagine_sursa, (int(coordonata_x), int(punctMijloc[1])), 10, (0, 255, 0), 3)
                     if coordonata_x < x_maxim_stanga:
                         x_maxim_stanga = coordonata_x
                     elif coordonata_x > x_maxim_dreapta:
                         x_maxim_dreapta = coordonata_x
-            # cv2.circle(imagine_delimitata, (int(x_maxim_stanga), int(punctMijloc[1])), 10, (255, 0, 0), 3)
-            # cv2.circle(imagine_delimitata, (int(x_maxim_dreapta), int(punctMijloc[1])), 10, (255, 0, 0), 3)
+            for index_puncte in range(-1, len(lista_puncte)-1, 1):
+                if (lista_puncte[index_puncte][1] <= punctMijloc[1] <= lista_puncte[index_puncte + 1][1]) or (
+                        lista_puncte[index_puncte][1] >= punctMijloc[1] >= lista_puncte[index_puncte + 1][1]):
+                    # daca dreapta poate fi intersectata
+                    coordonata_x = ((punctMijloc[1]-lista_puncte[index_puncte][1]) *
+                                    (lista_puncte[index_puncte+1][0]-lista_puncte[index_puncte][0])) / \
+                                   (lista_puncte[index_puncte+1][1]-lista_puncte[index_puncte][1]) + \
+                                   lista_puncte[index_puncte][0]
+                    # cv2.circle(imagine_sursa, (int(coordonata_x), int(punctMijloc[1])), 10, (0, 255, 0), 3)
+                    if x_maxim_stanga_2 > coordonata_x > x_maxim_stanga:
+                        x_maxim_stanga_2 = coordonata_x
+                    elif x_maxim_dreapta_2 < coordonata_x < x_maxim_dreapta:
+                        x_maxim_dreapta_2 = coordonata_x
+
+            # cv2.circle(imagine_sursa, (int(x_maxim_stanga), int(punctMijloc[1])), 10, (255, 0, 0), 3)
+            # cv2.circle(imagine_sursa, (int(x_maxim_dreapta), int(punctMijloc[1])), 10, (255, 0, 0), 3)
+            # cv2.circle(imagine_sursa, (int(x_maxim_stanga_2), int(punctMijloc[1])), 10, (255, 0, 0), 3)
+            # cv2.circle(imagine_sursa, (int(x_maxim_dreapta_2), int(punctMijloc[1])), 10, (255, 0, 0), 3)
+            # cv2.circle(imagine_sursa, (int((x_maxim_stanga + x_maxim_stanga_2) / 2), int(punctMijloc[1])), 10, (255, 0, 0), 3)
+            # cv2.circle(imagine_sursa, (int((x_maxim_dreapta + x_maxim_dreapta_2) / 2), int(punctMijloc[1])), 10, (255, 0, 0), 3)
             if x_maxim_stanga != punctMijloc[0]:
-                cv2.floodFill(imagine_sursa, mascaCreata, (int(x_maxim_stanga)+5, int(punctMijloc[1])), culoare)
+                cv2.floodFill(imagine_sursa, None, (int((x_maxim_stanga + x_maxim_stanga_2) / 2), int(punctMijloc[1])), culoare)
             else:
-                cv2.floodFill(imagine_sursa, mascaCreata, (int(x_maxim_dreapta)-5, int(punctMijloc[1])), culoare)
+                cv2.floodFill(imagine_sursa, None, (int((x_maxim_dreapta + x_maxim_dreapta_2) / 2), int(punctMijloc[1])), culoare)
     # else:
         # print("Nu am destule puncte!" + str(len(lista_puncte)))
     return imagine_sursa
 
 
-def regiuniDelimitare(imagine, lista_puncte, culoare):
+def regiuniDelimitare(imagine, lista_puncte, culoare, grosime):
     imag_aux = imagine.copy()
     if len(lista_puncte) >= 2:  # desenam liniile initiale
         for index_puncte in range(-1, len(lista_puncte) - 1, 1):
-            cv2.line(imag_aux, lista_puncte[index_puncte], lista_puncte[index_puncte + 1], culoare, 2)
+            cv2.line(imag_aux, lista_puncte[index_puncte], lista_puncte[index_puncte + 1], culoare, grosime)
     return imag_aux
 
 
@@ -118,12 +137,12 @@ def callbackMouse(event, mausx, mausy, flags, param):
 
 
 def callbackButonIncarcareMasca(par1, par2):
-    print(par1, par2)
+    # print(par1, par2)
     citireMascaFisier()
 
 
 def callbackButonSalvareMasca(par1, par2):
-    print(par1, par2)
+    # print(par1, par2)
     scriereMascaFisier()
 
 
@@ -186,13 +205,12 @@ if __name__ == '__main__':
             # regiunile salvate deja
             if i == index_regiune_curenta:
                 # coloreaza diferit regiunea curenta (selectata)
-                imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (255, 255, 0))
+                imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (255, 255, 0), 2)
             else:
                 # coloreaza normal regiunile neselectate
-                imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (0, 255, 0))
-            # MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaRegiuniDelimitare[i], latime, inaltime, listaRegiuniDelimitare.index(listaRegiuniDelimitare[i]))
-            listaMastiDelimitare.append(generareMascaDelimitare(listaRegiuniDelimitare[i], latime,
-                                                                inaltime, listaRegiuniDelimitare.index(listaRegiuniDelimitare[i])))
+                imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (0, 255, 0), 1)
+            listaMastiDelimitare.append(generareMascaDelimitare(listaRegiuniDelimitare[i], latime, inaltime,
+                                                                listaRegiuniDelimitare.index(listaRegiuniDelimitare[i])))
         # regiunea in lucru
         # MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaPuncte, latime, inaltime, numarRegiuniSalvate)
         listaMastiDelimitare.append(generareMascaDelimitare(listaPuncte, latime, inaltime, numarRegiuniSalvate))
@@ -200,7 +218,7 @@ if __name__ == '__main__':
         MascaDelimitare = np.zeros((int(latime), int(inaltime), 3), np.uint8)
         for masca in listaMastiDelimitare:
             MascaDelimitare += masca
-        imagineRegionata = regiuniDelimitare(imagineRegionata, listaPuncte, (0, 0, 255))  # regiunea inca in lucru
+        imagineRegionata = regiuniDelimitare(imagineRegionata, listaPuncte, (0, 0, 255), 2)  # regiunea inca in lucru
 
         cv2.putText(imagineRegionata, "Q - quit, W - salv. regiune, A si D - selectie regiune, S - sterge regiune, "
                                       "Ctrl+P - meniu", (5, 25), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 2,
