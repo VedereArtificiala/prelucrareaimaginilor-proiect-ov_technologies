@@ -6,7 +6,7 @@ listaRegiuniDelimitare = list()
 numarRegiuniSalvate = 0
 index_regiune_curenta = 0
 modAfisareAlternativ = False
-
+addedBrightness = 0
 
 def calculPunctMijloc(lista_puncte):
     maximx = lista_puncte[0][0]
@@ -29,16 +29,15 @@ def calculPunctMijloc(lista_puncte):
     return mijlocx, mijlocy
 
 
-def generareMascaDelimitare(lista_puncte, latime, inaltime, numarRegiune):  # 0 < numarRegiune < 23
+def generareMascaDelimitare(lista_puncte, latime, inaltime, numarRegiune, extraBrightness=0):  # 0 < numarRegiune < 23
     imagine_sursa = np.zeros((int(latime), int(inaltime), 3), np.uint8)
     mascaCreata = np.zeros((int(latime)+2, int(inaltime)+2), np.uint8)
     # print(1 << numarRegiune)
     if numarRegiune > 23:
         print("numar de regiune prea mare (>23), masca nu e corecta!")
     numarMasca = 1 << numarRegiune
-    # print(format((numarMasca >> 16) % 256, '08b')+" "+format((numarMasca >> 8) % 256, '08b')+" " +
-    #      format(numarMasca % 256, '08b'))
-    culoare = ((numarMasca >> 16) % 256, (numarMasca >> 8) % 256, numarMasca % 256)
+    # print(format((numarMasca >> 16) % 256, '08b')+" "+format((numarMasca >> 8) % 256, '08b')+" "+format(numarMasca % 256, '08b'))
+    culoare = ((numarMasca >> 16) % 256 + extraBrightness, (numarMasca >> 8) % 256 + extraBrightness, numarMasca % 256 + extraBrightness)
     if len(lista_puncte) >= 2:  # desenam liniile initiale
         for index_puncte in range(-1, len(lista_puncte) - 1, 1):
             cv2.line(imagine_sursa, lista_puncte[index_puncte], lista_puncte[index_puncte + 1], culoare, 1)
@@ -132,7 +131,7 @@ def callbackMouse(event, mausx, mausy, flags, param):
     if event == 1:
         listaPuncte.append((mausx, mausy))
         # print(listaPuncte)
-    if event == 2:
+    if event == 3:
         listaPuncte.clear()
 
 
@@ -153,6 +152,11 @@ def callbackButonAfisareAlternativa(par1, par2):
     # print(par1, par2)
 
 
+def callbackTrackbarBrightness(par1):
+    global addedBrightness
+    addedBrightness = par1
+
+
 if __name__ == '__main__':
     current_frame_index = 0
     nume_imagine_filtru = 'Editare masca'
@@ -162,6 +166,7 @@ if __name__ == '__main__':
     cv2.createButton("Incarcare masca", callbackButonIncarcareMasca, cv2.QT_PUSH_BUTTON)
     cv2.createButton("Salvare masca", callbackButonSalvareMasca, cv2.QT_PUSH_BUTTON)
     cv2.createButton("Mod alternativ afisare", callbackButonAfisareAlternativa, cv2.QT_PUSH_BUTTON)
+    cv2.createTrackbar("Brightness boost", "", 0, 50, callbackTrackbarBrightness)
     events = [i for i in dir(cv2) if 'EVENT' in i]  # printeaza toate evenimentele disponibile
     print(events)
 
@@ -210,18 +215,18 @@ if __name__ == '__main__':
                 # coloreaza normal regiunile neselectate
                 imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (0, 255, 0), 1)
             listaMastiDelimitare.append(generareMascaDelimitare(listaRegiuniDelimitare[i], latime, inaltime,
-                                                                listaRegiuniDelimitare.index(listaRegiuniDelimitare[i])))
+                                                                listaRegiuniDelimitare.index(listaRegiuniDelimitare[i]), addedBrightness))
         # regiunea in lucru
         # MascaDelimitare = generareMascaDelimitare(MascaDelimitare, listaPuncte, latime, inaltime, numarRegiuniSalvate)
-        listaMastiDelimitare.append(generareMascaDelimitare(listaPuncte, latime, inaltime, numarRegiuniSalvate))
+        listaMastiDelimitare.append(generareMascaDelimitare(listaPuncte, latime, inaltime, numarRegiuniSalvate, addedBrightness))
         # construire masca finala
         MascaDelimitare = np.zeros((int(latime), int(inaltime), 3), np.uint8)
         for masca in listaMastiDelimitare:
             MascaDelimitare += masca
         imagineRegionata = regiuniDelimitare(imagineRegionata, listaPuncte, (0, 0, 255), 2)  # regiunea inca in lucru
 
-        cv2.putText(imagineRegionata, "Q - quit, W - salv. regiune, A si D - selectie regiune, S - sterge regiune, "
-                                      "Ctrl+P - meniu", (5, 25), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 2,
+        cv2.putText(imagineRegionata, "Q - quit, W - salv. lista, A si D - sel. lista, S - sterge lista, "
+                                      "Ctrl+P - meniu, rotita - sterge lista in lucru", (5, 25), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 2,
                     cv2.LINE_8)
         cv2.putText(imagineRegionata, "Regiunea selectata: "+str(index_regiune_curenta), (5, 50),
                     cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 2, cv2.LINE_8)
