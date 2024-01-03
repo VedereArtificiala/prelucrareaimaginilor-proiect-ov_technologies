@@ -39,7 +39,7 @@ def listaNumereMasca(pixel_masca):
     return listaNumere
 
 
-def generareMascaDelimitare(lista_puncte, latime, inaltime, numarRegiune, extraBrightness=0):  # 0 < numarRegiune < 23
+def generareMascaDelimitare(lista_puncte, latime, inaltime, numarRegiune):  # 0 < numarRegiune < 23
     imagine_sursa = np.zeros((int(latime), int(inaltime), 3), np.uint8)
     # mascaCreata = np.zeros((int(latime)+2, int(inaltime)+2), np.uint8)
     # print(1 << numarRegiune)
@@ -47,7 +47,7 @@ def generareMascaDelimitare(lista_puncte, latime, inaltime, numarRegiune, extraB
         print("numar de regiune prea mare (>23), masca nu e corecta!")
     numarMasca = 1 << numarRegiune
     # print(format((numarMasca >> 16) % 256, '08b')+" "+format((numarMasca >> 8) % 256, '08b')+" "+format(numarMasca % 256, '08b'))
-    culoare = ((numarMasca >> 16) % 256 + extraBrightness, (numarMasca >> 8) % 256 + extraBrightness, numarMasca % 256 + extraBrightness)
+    culoare = ((numarMasca >> 16) % 256, (numarMasca >> 8) % 256, numarMasca % 256)
     if len(lista_puncte) >= 2:  # desenam liniile initiale
         for index_puncte in range(-1, len(lista_puncte) - 1, 1):
             cv2.line(imagine_sursa, lista_puncte[index_puncte], lista_puncte[index_puncte + 1], culoare, 1)
@@ -158,6 +158,7 @@ def callbackMouse(event, mausx, mausy, flags, param):
         listaPuncte.clear()
     cursor = (mausx, mausy)
 
+
 def callbackButonIncarcareMasca(par1, par2):
     # print(par1, par2)
     citirePuncteFisier()
@@ -239,14 +240,24 @@ if __name__ == '__main__':
                 # coloreaza normal regiunile neselectate
                 imagineRegionata = regiuniDelimitare(imagineRegionata, listaRegiuniDelimitare[i], (0, 255, 0), 1)
             listaMastiDelimitare.append(generareMascaDelimitare(listaRegiuniDelimitare[i], latime, inaltime,
-                                                                listaRegiuniDelimitare.index(listaRegiuniDelimitare[i]), addedBrightness))
+                                                                listaRegiuniDelimitare.index(listaRegiuniDelimitare[i])))
         # regiunea in lucru
-        listaMastiDelimitare.append(generareMascaDelimitare(listaPuncte, latime, inaltime, numarRegiuniSalvate, addedBrightness))
+        listaMastiDelimitare.append(generareMascaDelimitare(listaPuncte, latime, inaltime, numarRegiuniSalvate))
         # construire masca finala
         MascaDelimitare = np.zeros((int(latime), int(inaltime), 3), np.uint8)
         for masca in listaMastiDelimitare:
             MascaDelimitare += masca
-        textNumere = str(listaNumereMasca(MascaDelimitare[cursor[1]][cursor[0]]-addedBrightness))
+        # generare text pentru pixelul selectat de mouse
+        pixelSelectat = MascaDelimitare[cursor[1]][cursor[0]]
+        textNumere = str(listaNumereMasca(pixelSelectat))
+        # adaugare brightness pentru debugging mai usor
+        mascaBrightness = np.zeros((int(latime), int(inaltime), 3), np.uint8)
+        np.logical_and(MascaDelimitare, True, mascaBrightness)
+        # mascaBrightness = np.asarray(mascaBrightness, np.uint8)
+        mascaBrightness *= addedBrightness
+        MascaDelimitare += mascaBrightness
+        # np.left_shift(MascaDelimitare, addedBrightness, MascaDelimitare)
+
         cv2.putText(MascaDelimitare, textNumere, (5, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
         imagineRegionata = regiuniDelimitare(imagineRegionata, listaPuncte, (0, 0, 255), 2)  # regiunea inca in lucru
