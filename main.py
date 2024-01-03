@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
     read_frame_index = 0
     mascaGenerata = GenerareMasca.generareMascaFisier()  # incarca masca facuta cu scriptul GenerareMasca
-    mascaGenerata = cv2.resize(mascaGenerata, (0, 0), None, ratio, ratio)  # resize image
+    mascaGenerata = cv2.resize(mascaGenerata, (0, 0), None, ratio, ratio)  # resize imageq
     while True:
         if not pause:
             ret, frame = cap.read()

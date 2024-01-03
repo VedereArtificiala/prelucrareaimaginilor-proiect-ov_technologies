@@ -32,10 +32,10 @@ def calculPunctMijloc(lista_puncte):
 
 def listaNumereMasca(pixel_masca):
     listaNumere = list()
-    for index_culoare in range(len(pixel_masca)-1, -1, -1):  # trece prin cele 3 culori ale pixelului BGR
+    for index_culoare in range(0, len(pixel_masca)):  # trece prin cele 3 culori ale pixelului GBR
         for i in range(0, 8):
             if pixel_masca[index_culoare] & (1 << i) != 0:
-                listaNumere.append(i*index_culoare)
+                listaNumere.append(i+(len(pixel_masca)-index_culoare-1)*8)
     return listaNumere
 
 
