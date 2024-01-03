@@ -7,7 +7,7 @@ numarRegiuniSalvate = 0
 index_regiune_curenta = 0
 modAfisareAlternativ = False
 addedBrightness = 0
-
+cursor = (0, 0)
 
 def calculPunctMijloc(lista_puncte):
     maximx = lista_puncte[0][0]
@@ -149,13 +149,14 @@ def generareMascaFisier():
 
 
 def callbackMouse(event, mausx, mausy, flags, param):
-    global listaPuncte
+    global listaPuncte, cursor
     # print(event, mausx, mausy)
     if event == 1:
         listaPuncte.append((mausx, mausy))
         # print(listaPuncte)
     if event == 3:
         listaPuncte.clear()
+    cursor = (mausx, mausy)
 
 def callbackButonIncarcareMasca(par1, par2):
     # print(par1, par2)
@@ -245,6 +246,9 @@ if __name__ == '__main__':
         MascaDelimitare = np.zeros((int(latime), int(inaltime), 3), np.uint8)
         for masca in listaMastiDelimitare:
             MascaDelimitare += masca
+        textNumere = str(listaNumereMasca(MascaDelimitare[cursor[1]][cursor[0]]-addedBrightness))
+        cv2.putText(MascaDelimitare, textNumere, (5, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
         imagineRegionata = regiuniDelimitare(imagineRegionata, listaPuncte, (0, 0, 255), 2)  # regiunea inca in lucru
 
         cv2.putText(imagineRegionata, "Q - quit, W - salv. lista, A si D - sel. lista, S - sterge lista, "
