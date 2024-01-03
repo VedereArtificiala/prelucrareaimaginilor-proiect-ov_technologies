@@ -30,6 +30,15 @@ def calculPunctMijloc(lista_puncte):
     return mijlocx, mijlocy
 
 
+def listaNumereMasca(pixel_masca):
+    listaNumere = list()
+    for index_culoare in range(len(pixel_masca)-1, -1, -1):  # trece prin cele 3 culori ale pixelului BGR
+        for i in range(0, 8):
+            if pixel_masca[index_culoare] & (1 << i) != 0:
+                listaNumere.append(i*index_culoare)
+    return listaNumere
+
+
 def generareMascaDelimitare(lista_puncte, latime, inaltime, numarRegiune, extraBrightness=0):  # 0 < numarRegiune < 23
     imagine_sursa = np.zeros((int(latime), int(inaltime), 3), np.uint8)
     # mascaCreata = np.zeros((int(latime)+2, int(inaltime)+2), np.uint8)
@@ -148,7 +157,6 @@ def callbackMouse(event, mausx, mausy, flags, param):
     if event == 3:
         listaPuncte.clear()
 
-
 def callbackButonIncarcareMasca(par1, par2):
     # print(par1, par2)
     citirePuncteFisier()
@@ -192,7 +200,7 @@ if __name__ == '__main__':
     print(latime, inaltime)
 
     mascaGenerata = generareMascaFisier()
-    cv2.imshow("testGenerareMasca", mascaGenerata)
+    # cv2.imshow("testGenerareMasca", mascaGenerata)
     while True:
         key = cv2.waitKey(16)
         if key == ord('q'):  # Press 'q' to exit
@@ -218,7 +226,6 @@ if __name__ == '__main__':
                 listaRegiuniDelimitare.remove(listaRegiuniDelimitare[index_regiune_curenta])
                 numarRegiuniSalvate -= 1
                 index_regiune_curenta = numarRegiuniSalvate
-
         # aplicare filtru delimitare pe poza originala
         listaMastiDelimitare = list()
         imagineRegionata = frame.copy()

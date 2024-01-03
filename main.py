@@ -93,7 +93,7 @@ if __name__ == '__main__':
             hull = [cv2.convexHull(c) for c in contours]
 
             # draw contours / lines
-            cv2.drawContours(image, hull, -1, (0, 255, 0), 3)
+            # cv2.drawContours(image, hull, -1, (0, 255, 0), 3)
             # drawLines(image)
 
             cxx = np.zeros(len(contours))
@@ -111,10 +111,11 @@ if __name__ == '__main__':
 
                         x, y, w, h = cv2.boundingRect(cnt)
                         cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 2)
-                        cv2.putText(image, str(cx) + "," + str(cy), (cx + 10, cy + 10), cv2.FONT_HERSHEY_SIMPLEX,
-                                    .3, (0, 0, 255), 1)
+                        # cv2.putText(image, str(cx) + "," + str(cy), (cx + 10, cy + 10), cv2.FONT_HERSHEY_SIMPLEX, .3, (0, 0, 255), 1)
                         cv2.drawMarker(image, (cx, cy), (0, 0, 255), cv2.MARKER_STAR, markerSize=5, thickness=1, line_type=cv2.LINE_AA)
-
+                        textNumere = str(GenerareMasca.listaNumereMasca(mascaGenerata[cy][cx]))
+                        cv2.putText(image, textNumere, (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+                        # print(textNumere)
                         cxx[i] = cx
                         cyy[i] = cy
 
@@ -139,10 +140,10 @@ if __name__ == '__main__':
                 current_frame_index += 1
 
         # inceput afisare
-        mascaGenerataNoText = mascaGenerata.copy()
-        imagini = [frame, mask_buffer[-1], frame_buffer[-1], mascaGenerataNoText]  # lista cu imagini de afisat
-        imagini2 = [frame, mask_buffer[current_frame_index], frame_buffer[current_frame_index], mascaGenerataNoText]  # lista cu imagini de afisat
-        texte = ["frame "+str(read_frame_index), "finalMask", "image", "Masca generata"]  # lista cu numele fiecarei imagini
+        #mascaGenerataNoText = mascaGenerata.copy()
+        imagini = [frame, mask_buffer[-1], frame_buffer[-1]]  # lista cu imagini de afisat
+        imagini2 = [frame, mask_buffer[current_frame_index], frame_buffer[current_frame_index]]  # lista cu imagini de afisat
+        texte = ["frame "+str(read_frame_index), "finalMask", "image"]  # lista cu numele fiecarei imagini
         numar_de_imagini_pe_linie = 2
         if not pause:
             afisare(imagini, texte, numar_de_imagini_pe_linie)
