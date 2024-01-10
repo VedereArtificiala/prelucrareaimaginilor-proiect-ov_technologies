@@ -5,7 +5,7 @@ import GenerareMasca
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
 
-import Plotari
+import generareAfisari
 from car import Car
 import time
 import torch
@@ -17,34 +17,6 @@ torch.cuda.set_device(0) # Set to your desired GPU number
 listaPuncte = list()
 numarMasti = 0
 sp = [12, 13, 14, 15]
-
-def afisare(lista_imagini, text_imagini, cadre_pe_linie=2):
-    nr_cadre = len(lista_imagini)
-    nr_linii = int(np.ceil(nr_cadre / cadre_pe_linie))
-    nr_coloane = cadre_pe_linie
-    randuri_poze = []
-    *dimensiuni_poza, = lista_imagini[0].shape
-    latime = dimensiuni_poza[0]
-    inaltime = dimensiuni_poza[1]
-    for i in range(nr_linii):
-        linie_poze = []
-        for j in range(nr_coloane):
-            index_lista = i * nr_coloane + j
-            if index_lista < nr_cadre:
-                cv2.putText(lista_imagini[index_lista], text_imagini[index_lista], (5, 15), cv2.FONT_HERSHEY_SIMPLEX,
-                            0.5, (255, 255, 255), 1, cv2.LINE_AA)
-                if len(lista_imagini[index_lista].shape) < 3:
-                    color = np.zeros((int(latime), int(inaltime), 3), np.uint8)
-                    cv2.cvtColor(lista_imagini[index_lista], cv2.COLOR_GRAY2RGB, color)
-                    linie_poze.append(color)
-                else:
-                    linie_poze.append(lista_imagini[index_lista])
-            else:
-                linie_poze.append(np.zeros((int(latime), int(inaltime), 3), np.uint8))
-        randuri_poze.append(cv2.hconcat(linie_poze))
-    final = cv2.vconcat(randuri_poze)
-
-    cv2.imshow('video', final)
 
 
 if __name__ == '__main__':
@@ -58,14 +30,14 @@ if __name__ == '__main__':
     yolo_buffer = deque(maxlen=1000)
     current_frame_index = 0
     pause = False
-    cap = cv2.VideoCapture('intersectie.mp4')
+    cap = cv2.VideoCapture('intersectie_lung.mp4')
 
     model = YOLO('yolov8n.pt')
     model.to('cuda')
 
     MINAREA = 300
     MAXAREA = 50000
-    ratio = 0.3 # resize ratio in order to reduce lag
+    ratio = 0.3  # resize ratio in order to reduce lag
 
     read_frame_index = 0
     mascaGenerata = GenerareMasca.generareMascaFisier()  # incarca masca facuta cu scriptul GenerareMasca
@@ -155,26 +127,25 @@ if __name__ == '__main__':
             if pause and current_frame_index + 1 < len(frame_buffer) - 1:
                 current_frame_index += 1
 
-        plotNumarMasini = Plotari.generarePlot(numar_masini_pe_banda, resizedHeight, resizedWidth)
+        plotNumarMasini = generareAfisari.generarePlot(numar_masini_pe_banda, resizedHeight, resizedWidth)
         # inceput afisare
         # mascaGenerataNoText = mascaGenerata.copy()
-        imagini = [yolo_buffer[-1], frame_buffer[-1], mascaGenerata, plotNumarMasini]  # lista cu imagini de afisat
-        imagini2 = [yolo_buffer[current_frame_index], frame_buffer[current_frame_index], mascaGenerata, plotNumarMasini]  # lista cu imagini de afisat
-        texte = [str(fps), "f", "i", "m", "Nr masini"]  # lista cu numele fiecarei imagini
+        imagini = [frame_buffer[-1], yolo_buffer[-1],  mascaGenerata, plotNumarMasini]  # lista cu imagini de afisat
+        imagini2 = [frame_buffer[current_frame_index], yolo_buffer[current_frame_index],  mascaGenerata, plotNumarMasini]  # lista cu imagini de afisat
+        texte = [str(fps), "f", "i", "Masca", "Masini: "+str(len(boxes))]  # lista cu numele fiecarei imagini
         numar_de_imagini_pe_linie = 2
-
-
+        # TODO scale automat la rezolutia ecranului
         if not pause:
-            afisare(imagini, texte, numar_de_imagini_pe_linie)
+            generareAfisari.afisare(imagini, texte, numar_de_imagini_pe_linie)
         else:
-            afisare(imagini2, texte, numar_de_imagini_pe_linie)
+            generareAfisari.afisare(imagini2, texte, numar_de_imagini_pe_linie)
 
         read_frame_index += 1
 
-        #if read_frame_index % (fps * 10) == 0: #  daca au trecut 10 sec
+        # if read_frame_index % (fps * 10) == 0: #  daca au trecut 10 sec
         cars_added = False
         for key, val in car.items():
-            if read_frame_index - val.last_frame > 100: #  daca de la ultimul frame inregistrat au trecut alte 100 de frame-uri sterge elementul
+            if read_frame_index - val.last_frame > 100:  # daca de la ultimul frame inregistrat au trecut alte 100 de frame-uri sterge elementul
                 recorded_cars[key] = val
                 cars_added = True
         if cars_added:
@@ -191,6 +162,7 @@ if __name__ == '__main__':
                    #   f'LAST FRAME : {recorded_cars[key].last_frame}\n'
                     #  f'FRAME ON EACH MASK : {recorded_cars[key].mask_l}\n'
                      # f'--------------------------\n')
+            # TODO integrare cu baza de date
         # print(f"Frames per second (FPS): {fps}")
     # profiler.disable()
     # stats = pstats.Stats(profiler).sort_stats('tottime')

@@ -8,6 +8,8 @@ index_regiune_curenta = 0
 modAfisareAlternativ = False
 addedBrightness = 0
 cursor = (0, 0)
+# TODO salvare masti de intrare separat
+# TODO reparare masca curenta
 
 def calculPunctMijloc(lista_puncte):
     maximx = lista_puncte[0][0]
