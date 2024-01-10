@@ -196,6 +196,7 @@ if __name__ == '__main__':
 
     cap = cv2.VideoCapture('intersectie.mp4')
     ret, frame = cap.read()
+    frame = cv2.resize(frame, (0, 0), None, 1.5, 1.5)
     if frame is None:  # nu a citit frame, probabil path prost de fisier
         print("Nu am putut citi niciun frame!")
     latime, inaltime, canale = frame.shape
