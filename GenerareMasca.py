@@ -159,6 +159,9 @@ def callbackMouse(event, mausx, mausy, flags, param):
     cursor = (mausx, mausy)
 
 
+def numarMastiIncarcate():
+    return len(listaRegiuniDelimitare)
+
 def callbackButonIncarcareMasca(par1, par2):
     # print(par1, par2)
     citirePuncteFisier()
