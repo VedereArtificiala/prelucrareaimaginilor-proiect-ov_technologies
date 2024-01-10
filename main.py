@@ -4,9 +4,16 @@ from collections import deque
 import GenerareMasca
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
+
+import Plotari
 from car import Car
 import time
+import torch
+# import cProfile, pstats
+import matplotlib.pyplot as plt
 
+torch.cuda.set_device(0) # Set to your desired GPU number
+# torch.cuda.set_per_process_memory_fraction(0.8, 0)
 listaPuncte = list()
 numarMasti = 0
 sp = [12, 13, 14, 15]
@@ -41,6 +48,9 @@ def afisare(lista_imagini, text_imagini, cadre_pe_linie=2):
 
 
 if __name__ == '__main__':
+
+    # profiler = cProfile.Profile()
+    # profiler.enable()
     car = {}
     recorded_cars = {}
     start_p = {}
@@ -50,20 +60,24 @@ if __name__ == '__main__':
     pause = False
     cap = cv2.VideoCapture('intersectie.mp4')
 
-    model = YOLO('yolov5n.pt')
+    model = YOLO('yolov8n.pt')
+    model.to('cuda')
 
     MINAREA = 300
     MAXAREA = 50000
-    ratio = 0.6 # resize ratio in order to reduce lag
+    ratio = 0.3 # resize ratio in order to reduce lag
 
     read_frame_index = 0
     mascaGenerata = GenerareMasca.generareMascaFisier()  # incarca masca facuta cu scriptul GenerareMasca
     # aducem masca la dimensiunea videoclipului
-    mascaGenerata = cv2.resize(mascaGenerata, (0, 0), None, 2/3, 2/3)  # resize imageq
+    # mascaGenerata = cv2.resize(mascaGenerata, (0, 0), None, 2/3, 2/3)  # resize imageq
     mascaGenerata = cv2.resize(mascaGenerata, (0, 0), None, ratio, ratio)  # resize imageq
+    fps = 0
+    numar_benzi_carosabile = GenerareMasca.numarMastiIncarcate()
+
     while True:
         start_time = time.time()
-
+        numar_masini_pe_banda = [0] * numar_benzi_carosabile
         if not pause:
             ret, frame = cap.read()
             if frame is None and read_frame_index == 0:  # nu a citit frame, probabil path prost de fisier
@@ -80,7 +94,7 @@ if __name__ == '__main__':
             frame_buffer.append(image)
 
             yolo_buffer.append(frame)
-            result = model.track(frame, conf=0.20, persist = True, tracker="botsort.yaml", verbose = False)
+            result = model.track(frame, conf=0.20, persist=True, tracker="botsort.yaml", verbose=False, device=0, stream=True)
 
             for r in result:
                 boxes = r.boxes
@@ -101,7 +115,7 @@ if __name__ == '__main__':
                         c.set_center((int(center_coordinates[0]), int(center_coordinates[1])))
                         c.set_id(id)
 
-                        if c.s_point == None:
+                        if c.s_point is None:
                             for p in sp:
                                 if p in masks:
                                     start_p[id] = [str(val) for val in masks if val != p]
@@ -118,43 +132,42 @@ if __name__ == '__main__':
                         car[id].set_last_frame(read_frame_index)
 
                     cv2.circle(frame, (int(center_coordinates[0]), int(center_coordinates[1])), 3, (0, 0, 255), -1)
-
-                    textNumere = str(GenerareMasca.listaNumereMasca(mascaGenerata[int(center_y)][int(center_x)]))
+                    mastiMasina = GenerareMasca.listaNumereMasca(mascaGenerata[int(center_y)][int(center_x)])
+                    textNumere = str(mastiMasina)
                     cv2.putText(frame, textNumere, (int(center_coordinates[0]), int(center_coordinates[1])),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
                     text = "ID:"+str(int(box.id.item()))
                     cv2.putText(frame, text, (int(center_coordinates[0]) - 40, int(center_coordinates[1])),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-
-
-        key = cv2.waitKey(10)
-        if key == ord('q'):  # Press 'q' to exit
+                    for masca in mastiMasina:
+                        numar_masini_pe_banda[masca] += 1
+        tasta = cv2.waitKey(1)
+        if tasta == ord('q'):  # Press 'q' to exit
             break
-        elif key == ord(' '):  # Press space to toggle pause
+        elif tasta == ord(' '):  # Press space to toggle pause
             pause = not pause
             current_frame_index = len(frame_buffer) - 1
-        elif key == ord('a'):  # Press '<' to move backward
+        elif tasta == ord('a'):  # Press '<' to move backward
             if pause:
                 current_frame_index -= 1
-        elif key == ord('d'):  # Press '>' to move forward
+        elif tasta == ord('d'):  # Press '>' to move forward
             if pause and current_frame_index + 1 < len(frame_buffer) - 1:
                 current_frame_index += 1
 
+        plotNumarMasini = Plotari.generarePlot(numar_masini_pe_banda, resizedHeight, resizedWidth)
         # inceput afisare
-        #mascaGenerataNoText = mascaGenerata.copy()
-        imagini = [frame, yolo_buffer[-1], frame_buffer[-1],mascaGenerata]  # lista cu imagini de afisat
-        imagini2 = [frame, yolo_buffer[current_frame_index], frame_buffer[current_frame_index],mascaGenerata]  # lista cu imagini de afisat
-        texte = ["frame "+str(read_frame_index), "f", "i", "m"]  # lista cu numele fiecarei imagini
+        # mascaGenerataNoText = mascaGenerata.copy()
+        imagini = [yolo_buffer[-1], frame_buffer[-1], mascaGenerata, plotNumarMasini]  # lista cu imagini de afisat
+        imagini2 = [yolo_buffer[current_frame_index], frame_buffer[current_frame_index], mascaGenerata, plotNumarMasini]  # lista cu imagini de afisat
+        texte = [str(fps), "f", "i", "m", "Nr masini"]  # lista cu numele fiecarei imagini
         numar_de_imagini_pe_linie = 2
+
+
         if not pause:
             afisare(imagini, texte, numar_de_imagini_pe_linie)
         else:
             afisare(imagini2, texte, numar_de_imagini_pe_linie)
-
-        elapsed_time = time.time() - start_time
-        fps = round(1/round(elapsed_time, 3), 0)
 
         read_frame_index += 1
 
@@ -169,11 +182,16 @@ if __name__ == '__main__':
                 if key in car:
                     del car[key]
 
-            for key in recorded_cars:
-                print(f'\n------------------------\n'
-                      f'CAR ID : {recorded_cars[key].id}\n'
-                      f'START POINT : {recorded_cars[key].s_point}\n'
-                      f'LAST FRAME : {recorded_cars[key].last_frame}\n'
-                      f'FRAME ON EACH MASK : {recorded_cars[key].mask_l}\n'
-                      f'--------------------------\n')
-        # print(f"Frames per second (FPS): {elapsed_time}")
+        elapsed_time = time.time() - start_time
+        fps = round(1/round(elapsed_time, 3), 1)
+          #  for key in recorded_cars:
+                #print(f'\n------------------------\n'
+                 #   f'CAR ID : {recorded_cars[key].id}\n'
+                  #    f'START POINT : {recorded_cars[key].s_point}\n'
+                   #   f'LAST FRAME : {recorded_cars[key].last_frame}\n'
+                    #  f'FRAME ON EACH MASK : {recorded_cars[key].mask_l}\n'
+                     # f'--------------------------\n')
+        # print(f"Frames per second (FPS): {fps}")
+    # profiler.disable()
+    # stats = pstats.Stats(profiler).sort_stats('tottime')
+    # stats.print_stats()
