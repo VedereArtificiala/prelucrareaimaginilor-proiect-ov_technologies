@@ -11,6 +11,8 @@ def generarePlot(valori, latime, inaltime, culoare=(255, 0, 0)):
             x_stanga = int(latime/len(valori))*index
             x_dreapta = x_stanga+int(latime/len(valori))
             cv2.rectangle(imagine_sursa, (x_stanga+2, y_sus), (x_dreapta-2, inaltime), culoare, -1, cv2.LINE_8)
+        for y in range(int(inaltime/max_val), inaltime, int(inaltime/max_val)):
+            cv2.line(imagine_sursa, (0, y), (latime, y), (0, 0, 0,), 3, cv2.LINE_8)
     return imagine_sursa
 
 
@@ -27,7 +29,7 @@ def afisare(lista_imagini, text_imagini, cadre_pe_linie=2):
         for j in range(nr_coloane):
             index_lista = i * nr_coloane + j
             if index_lista < nr_cadre:
-                cv2.putText(lista_imagini[index_lista], text_imagini[index_lista], (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+                cv2.putText(lista_imagini[index_lista], text_imagini[index_lista], (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_8)
                 if len(lista_imagini[index_lista].shape) < 3:
                     color = np.zeros((int(latime), int(inaltime), 3), np.uint8)
                     cv2.cvtColor(lista_imagini[index_lista], cv2.COLOR_GRAY2RGB, color)
@@ -46,4 +48,3 @@ if __name__ == '__main__':
     img = generarePlot(puncte, 500, 300)
     cv2.imshow("Plotu", img)
     cv2.waitKey(0)
-
