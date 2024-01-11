@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 from collections import deque
-import GenerareMasca
+import Mascuta
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
 
@@ -14,9 +14,7 @@ import torch
 torch.cuda.set_device(0)  # Set to your desired GPU number
 listaPuncte = list()
 numarMasti = 0
-#sp = [12, 13, 14, 15]
-sp = GenerareMasca.citireMastiIntrare()
-print(sp)
+sp = Mascuta.citireMastiIntrare()
 
 
 if __name__ == '__main__':
@@ -30,22 +28,23 @@ if __name__ == '__main__':
     yolo_buffer = deque(maxlen=1000)
     current_frame_index = 0
     pause = False
-    cap = cv2.VideoCapture('videoclipuri/intersectie_lung.mp4')
+    nume_video = "intersectie.mp4"
+    cap = cv2.VideoCapture('videoclipuri/'+nume_video)
 
     model = YOLO('yolov8n.pt')
     model.to('cuda')
 
     MINAREA = 300
     MAXAREA = 50000
-    ratio = 0.3  # resize ratio in order to reduce lag
+    ratio = 0.45  # resize ratio in order to reduce lag
 
     read_frame_index = 0
-    mascaGenerata = GenerareMasca.generareMascaFisier()  # incarca masca facuta cu scriptul GenerareMasca
+    mascaGenerata = Mascuta.generareMascaFisier()  # incarca masca facuta cu scriptul GenerareMasca
     # aducem masca la dimensiunea videoclipului
     # mascaGenerata = cv2.resize(mascaGenerata, (0, 0), None, 2/3, 2/3)  # resize imageq
     mascaGenerata = cv2.resize(mascaGenerata, (0, 0), None, ratio, ratio)  # resize imageq
     fps = 0
-    numar_benzi_carosabile = GenerareMasca.numarMastiIncarcate()
+    numar_benzi_carosabile = Mascuta.numarMastiIncarcate()
     # cv2.namedWindow('video', cv2.WINDOW_NORMAL)
     # cv2.setWindowProperty('video', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     while True:
@@ -80,7 +79,7 @@ if __name__ == '__main__':
                     bottom_y = b[3] - offset
                     center_coordinates = (center_x, bottom_y)
                     id = str(int(box.id.item()))
-                    masks = GenerareMasca.listaNumereMasca(mascaGenerata[int(center_y)][int(center_x)])
+                    masks = Mascuta.listaNumereMasca(mascaGenerata[int(center_y)][int(center_x)])
 
                     if id not in car:
                         c = Car()
@@ -105,7 +104,7 @@ if __name__ == '__main__':
                         car[id].set_last_frame(read_frame_index)
 
                     cv2.circle(frame, (int(center_coordinates[0]), int(center_coordinates[1])), 3, (0, 0, 255), -1)
-                    mastiMasina = GenerareMasca.listaNumereMasca(mascaGenerata[int(center_y)][int(center_x)])
+                    mastiMasina = Mascuta.listaNumereMasca(mascaGenerata[int(center_y)][int(center_x)])
                     textNumere = str(mastiMasina)
                     cv2.putText(frame, textNumere, (int(center_coordinates[0]), int(center_coordinates[1])),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2, cv2.LINE_8)
@@ -135,7 +134,6 @@ if __name__ == '__main__':
         imagini2 = [frame_buffer[current_frame_index], yolo_buffer[current_frame_index],  mascaGenerata, plotNumarMasini]  # lista cu imagini de afisat
         texte = ["Fps: "+str(fps), "Detectii", "Masca", "Masini: "+str(len(boxes))]  # lista cu numele fiecarei imagini
         numar_de_imagini_pe_linie = 2
-        # TODO scale automat la rezolutia ecranului
         if not pause:
             generareAfisari.afisare(imagini, texte, numar_de_imagini_pe_linie)
         else:
