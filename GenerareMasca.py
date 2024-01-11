@@ -119,6 +119,16 @@ def scrierePuncteFisier():
     fisier.close()
 
 
+def citireMastiIntrare():
+    fisier = open("mastiIntrare.txt", "r")
+    listaPuncte = list()
+    for linie in fisier:
+        listaNumereString = linie.split()
+        for i in range(0, len(listaNumereString)):
+            listaPuncte.append(int(listaNumereString[i]))
+    return listaPuncte
+
+
 def citirePuncteFisier():
     global listaRegiuniDelimitare, numarRegiuniSalvate, index_regiune_curenta
     numarRegiuniSalvate = 0
@@ -199,7 +209,7 @@ if __name__ == '__main__':
     events = [i for i in dir(cv2) if 'EVENT' in i]  # printeaza toate evenimentele disponibile
     print(events)
 
-    cap = cv2.VideoCapture('intersectie.mp4')
+    cap = cv2.VideoCapture('videoclipuri/intersectie.mp4')
     ret, frame = cap.read()
     frame = cv2.resize(frame, (0, 0), None, 1.5, 1.5)
     if frame is None:  # nu a citit frame, probabil path prost de fisier

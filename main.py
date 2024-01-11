@@ -10,13 +10,13 @@ from car import Car
 import time
 import torch
 # import cProfile, pstats
-import matplotlib.pyplot as plt
 
-torch.cuda.set_device(0) # Set to your desired GPU number
-# torch.cuda.set_per_process_memory_fraction(0.8, 0)
+torch.cuda.set_device(0)  # Set to your desired GPU number
 listaPuncte = list()
 numarMasti = 0
-sp = [12, 13, 14, 15]
+#sp = [12, 13, 14, 15]
+sp = GenerareMasca.citireMastiIntrare()
+print(sp)
 
 
 if __name__ == '__main__':
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     yolo_buffer = deque(maxlen=1000)
     current_frame_index = 0
     pause = False
-    cap = cv2.VideoCapture('intersectie_lung.mp4')
+    cap = cv2.VideoCapture('videoclipuri/intersectie_lung.mp4')
 
     model = YOLO('yolov8n.pt')
     model.to('cuda')
@@ -46,7 +46,8 @@ if __name__ == '__main__':
     mascaGenerata = cv2.resize(mascaGenerata, (0, 0), None, ratio, ratio)  # resize imageq
     fps = 0
     numar_benzi_carosabile = GenerareMasca.numarMastiIncarcate()
-
+    # cv2.namedWindow('video', cv2.WINDOW_NORMAL)
+    # cv2.setWindowProperty('video', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     while True:
         start_time = time.time()
         numar_masini_pe_banda = [0] * numar_benzi_carosabile
@@ -107,11 +108,11 @@ if __name__ == '__main__':
                     mastiMasina = GenerareMasca.listaNumereMasca(mascaGenerata[int(center_y)][int(center_x)])
                     textNumere = str(mastiMasina)
                     cv2.putText(frame, textNumere, (int(center_coordinates[0]), int(center_coordinates[1])),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2, cv2.LINE_8)
 
                     text = "ID:"+str(int(box.id.item()))
                     cv2.putText(frame, text, (int(center_coordinates[0]) - 40, int(center_coordinates[1])),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2, cv2.LINE_8)
                     for masca in mastiMasina:
                         numar_masini_pe_banda[masca] += 1
         tasta = cv2.waitKey(1)
@@ -132,7 +133,7 @@ if __name__ == '__main__':
         # mascaGenerataNoText = mascaGenerata.copy()
         imagini = [frame_buffer[-1], yolo_buffer[-1],  mascaGenerata, plotNumarMasini]  # lista cu imagini de afisat
         imagini2 = [frame_buffer[current_frame_index], yolo_buffer[current_frame_index],  mascaGenerata, plotNumarMasini]  # lista cu imagini de afisat
-        texte = [str(fps), "f", "i", "Masca", "Masini: "+str(len(boxes))]  # lista cu numele fiecarei imagini
+        texte = ["Fps: "+str(fps), "Detectii", "Masca", "Masini: "+str(len(boxes))]  # lista cu numele fiecarei imagini
         numar_de_imagini_pe_linie = 2
         # TODO scale automat la rezolutia ecranului
         if not pause:
@@ -162,7 +163,7 @@ if __name__ == '__main__':
                    #   f'LAST FRAME : {recorded_cars[key].last_frame}\n'
                     #  f'FRAME ON EACH MASK : {recorded_cars[key].mask_l}\n'
                      # f'--------------------------\n')
-            # TODO integrare cu baza de date
+            #TODO integrare cu baza de date
         # print(f"Frames per second (FPS): {fps}")
     # profiler.disable()
     # stats = pstats.Stats(profiler).sort_stats('tottime')
